@@ -8,7 +8,7 @@ program ones
     implicit none
 
     ! Loop counters
-    integer :: i, j
+    integer :: x, y
     
     ! Dimension of the array & the 2d array
     integer :: n
@@ -31,15 +31,15 @@ program ones
     allocate(new_array(n, n))
 
     ! initialize both array 
-    do i = 1, n
-        do j = 1, n
-            new_array(i, j) = 0
+    do x = 1, n
+        do y = 1, n
+            new_array(x, y) = 0
 
             call random_number(rnd)
             if (rnd .le. 0.5) then
-                array(i, j) = 1
+                array(x, y) = 1
             else
-                array(i, j) = 0
+                array(x, y) = 0
             endif
         enddo
     enddo
@@ -57,18 +57,18 @@ program ones
     ! display the result 
     print *, 'The randomly generated array looks like this: '
 
-    do i = 1, n
-        do j = 1, n
-            write(*,'(1x,i0)', advance='no') array(i, j)
+    do x = 1, n
+        do y = 1, n
+            write(*,'(1x,i0)', advance='no') array(x, y)
         enddo
         write(*, *) ''
     enddo
 
     print *, 'The second array looks like this: '
 
-    do i = 1, n
-        do j = 1, n
-            write(*,'(1x,i0)', advance='no') new_array(i, j)
+    do x = 1, n
+        do y = 1, n
+            write(*,'(1x,i0)', advance='no') new_array(x, y)
         enddo
         write(*, *) ''
     enddo
