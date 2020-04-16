@@ -40,7 +40,7 @@ program ones
             new_array(x, y) = 0
 
             call random_number(rnd)
-            if (rnd .le. 0.5) then
+            if (rnd .le. 0.3) then
                 array(x, y) = 1
             else
                 array(x, y) = 0
