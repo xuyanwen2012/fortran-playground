@@ -53,7 +53,7 @@ Example 2 input and output for trap.f90:
 Example 1 input and output for ones.f90: 
 
 ```
--bash-4.2$ ones
+-bash-4.2$ ./ones
  Enter the dimension (one integer):
 5
  The randomly generated array looks like this:
