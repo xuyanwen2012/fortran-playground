@@ -6,9 +6,15 @@
 
 program ones
     implicit none
+    interface
+        integer function is_valid(x, y, n) result(ok)
+            implicit none
+            integer, intent(in) :: x, y, n
+        end function is_valid
+    end interface
 
     ! Loop counters
-    integer :: x, y
+    integer :: x, y, i ,j
     
     ! Dimension of the array & the 2d array
     integer :: n
@@ -17,13 +23,11 @@ program ones
     ! random real between 0, 1 
     real :: rnd
 
-    integer :: temp, sum
+    integer :: temp_sum
 
     ! ------- Main -----------
     call random_seed()
     
-    ! print *, rnd
-
     print *, 'Enter the dimension (one integer): '
     read (*,*) n
 
@@ -45,13 +49,37 @@ program ones
     enddo
 
     ! compute the new_array
-    ! do i = 1, n
-    !     do j = 1, n
+    do x = 1, n
+        do y = 1, n
 
-    !     enddo
-    ! enddo
-    call count_neighbors(1, 1, n, temp)
-    print *, "tmp = ", temp 
+            ! Count neighbors by iterating through neighbors cells
+            temp_sum = 0
+            do i = -1, 1
+                do j = -1, 1
+                    ! Skip self cell
+                    if (i .eq. 0 .and. j .eq. 0) then
+                        cycle
+                    endif
+
+                    if (is_valid(x + i ,y + j, n) .eq. 1) then
+                        ! now count
+                        if (array(x + i ,y + j) .eq. 1) then
+                            temp_sum = temp_sum + 1
+                        endif
+                    endif 
+                enddo
+            enddo
+
+            ! print *, "temp_sum = ", temp_sum
+            if (temp_sum .ge. 3) then
+                new_array(x, y) = 1
+            endif
+
+        enddo
+    enddo
+
+    ! call count_neighbors(1, 1, n, temp)
+    ! print *, "tmp = ", temp 
 
 
     ! display the result 
@@ -78,34 +106,34 @@ program ones
 
 end program ones
 
-! a helper function to count how many ones are around (x, y)
-subroutine count_neighbors(x, y, n, sum)
-    implicit none
-    interface
-        integer function is_valid(x, y, n) result(ok)
-            implicit none
-            integer, intent(in) :: x, y, n
-        end function is_valid
-    end interface
+! ! a helper function to count how many ones are around (x, y)
+! subroutine count_neighbors(x, y, n, sum)
+!     implicit none
+!     interface
+!         integer function is_valid(x, y, n) result(ok)
+!             implicit none
+!             integer, intent(in) :: x, y, n
+!         end function is_valid
+!     end interface
 
-    integer, intent(in) :: x, y, n
-    integer, intent(out) :: sum
-    integer :: i, j
+!     integer, intent(in) :: x, y, n
+!     integer, intent(out) :: sum
+!     integer :: i, j
 
-    do i = -1,1, 1
-        do j = -1,1, 1
-            if (i .eq. 0 .and. j .eq. 0) then
-                cycle
-            endif
+!     do i = -1, 1
+!         do j = -1, 1
+!             if (i .eq. 0 .and. j .eq. 0) then
+!                 cycle
+!             endif
 
-            ! print *, x+i, ' ', y+j 
-            if (is_valid(x+i ,y+j, n) .eq. 1) then
-                print *, x+i, ' ', y+j 
-            endif 
-        enddo
-    enddo
+!             ! print *, x+i, ' ', y+j 
+!             if (is_valid(x+i ,y+j, n) .eq. 1) then
+!                 print *, x+i, ' ', y+j 
+!             endif 
+!         enddo
+!     enddo
 
-end subroutine count_neighbors
+! end subroutine count_neighbors
 
 ! check if x is in 1..n
 integer function is_valid(x, y, n) result(ok)
