@@ -1,10 +1,12 @@
-! Yanwen Xu
-! yxu83@ucsc.edu
-! AM 250 
-! Homework 4
-
 program main
+
+    ! Yanwen Xu
+    ! yxu83@ucsc.edu
+    ! AM 250 
+    ! Homework 4    
+    
     use mpi
+
     implicit none
     
     integer ierr, myid, numprocs
