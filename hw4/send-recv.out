@@ -1,0 +1,6 @@
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+ On processor            0 , before send, my buffer =    1.0000000       2.0000000       3.0000000       4.0000000       5.0000000       6.0000000       7.0000000       8.0000000       9.0000000       10.000000    
+ On processor            0 , after send, my buffer =    1.0000000       2.0000000       3.0000000       4.0000000       5.0000000       6.0000000       7.0000000       8.0000000       9.0000000       10.000000    
+ On processor            1 , before recv, my buffer =    0.0000000       0.0000000      1.62002835E-28  8.12753109E-44   0.0000000       0.0000000      1.57853430E+37  4.59135442E-41  2.80259693E-45   0.0000000    
+ On processor            1 , after recv, my buffer =    1.0000000       2.0000000       3.0000000       4.0000000       5.0000000       6.0000000       7.0000000       8.0000000       9.0000000       10.000000    

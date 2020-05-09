@@ -1,0 +1,10 @@
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+ On processor            1 , recieved          123  from            0
+ On processor            2 , recieved          123  from            1
+ On processor            3 , recieved          123  from            2
+ On processor            0 , recieved          123  from            4
+ On processor            4 , recieved          123  from            3

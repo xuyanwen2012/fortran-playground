@@ -1,0 +1,24 @@
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+ On processor            0 , Ping!            0
+ On processor            0 , Pong!            1
+ On processor            0 , Ping!            2
+ On processor            0 , Pong!            3
+ On processor            0 , Ping!            4
+ On processor            0 , Pong!            5
+ On processor            0 , Ping!            6
+ On processor            0 , Pong!            7
+ On processor            0 , Ping!            8
+ On processor            0 , Pong!            9
+ On processor            0 , Ping!           10
+ On processor            1 , Pong!            0
+ On processor            1 , Ping!            1
+ On processor            1 , Pong!            2
+ On processor            1 , Ping!            3
+ On processor            1 , Pong!            4
+ On processor            1 , Ping!            5
+ On processor            1 , Pong!            6
+ On processor            1 , Ping!            7
+ On processor            1 , Pong!            8
+ On processor            1 , Ping!            9
+ On processor            1 , Pong!           10
