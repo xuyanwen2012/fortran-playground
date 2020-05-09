@@ -1,3 +1,8 @@
+! Yanwen Xu
+! yxu83@ucsc.edu
+! AM 250 
+! Homework 4
+
 program main
     use mpi
     implicit none
