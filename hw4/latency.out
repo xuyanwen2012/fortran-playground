@@ -1,0 +1,12 @@
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+ On processor            0 , Pong! delta time:   4.60147857666015625E-005
+ On processor            0 , Ping!
+ On processor            0 , Pong! delta time:   8.79764556884765625E-005
+ On processor            0 , Ping!
+ On processor            0 , Pong! delta time:   1.38282775878906250E-005
+ On processor            1 , Ping!
+ On processor            1 , Pong! delta time:   2.52008438110351563E-004
+ On processor            1 , Ping!
+ On processor            1 , Pong! delta time:   1.50203704833984375E-005
+ On processor            1 , Ping!
