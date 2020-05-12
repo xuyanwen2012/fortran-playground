@@ -1,0 +1,10 @@
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+DAT Registry: sysconfdir, bad filename - /etc/rdma/compat-dapl/dat.conf, retry default at /etc/dat.conf
+           1 ) simulated      7854393 /    10000000  darts in circle.
+           2 ) simulated      7854736 /    10000000  darts in circle.
+           3 ) simulated      7854986 /    10000000  darts in circle.
+           4 ) simulated      7853637 /    10000000  darts in circle.
+ PI =    3.1417752000000001     
