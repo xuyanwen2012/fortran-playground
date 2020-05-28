@@ -1,9 +1,11 @@
-program hello
+program mat_v2
 
     ! Yanwen Xu
     ! yxu83@ucsc.edu
     ! AM 250 
     ! Homework 6 
+    ! 
+    ! The program Use Fortran MATMUL and OpenMP workshare
 
     use omp_lib
 
@@ -42,4 +44,4 @@ program hello
 
     !$omp end parallel
 
-end program hello
+end program mat_v2
