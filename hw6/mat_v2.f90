@@ -11,29 +11,34 @@ program mat_v2
 
     implicit none
 
-    integer :: size = 3
-    integer, dimension(3, 3) :: mat_a, mat_b, mat_c ! C = A*B
-    integer :: i, j, k, sum
+    integer :: size = 1000 ! Size of all three matrix
+    integer :: i, j, k
+    real, dimension(1000, 1000) :: mat_a, mat_b, mat_c ! C = A*B
+    double precision :: t1, t2
 
-    mat_a = reshape((/ 1, 2, 3, 4, 5, 6, 7, 8, 9 /), shape(mat_a), order = (/2, 1/))
-    mat_b = reshape((/ 10, 20, 30, 40, 50, 60, 70, 80, 90 /), shape(mat_a), order = (/2, 1/))
+    ! Initialize matrix
+    mat_a = 1.0
+    mat_b = 1.0
+    mat_c = 0.0
 
-    ! Use simple do loop, which iterates each (i,j) cell and compute sum
-    mat_c = matmul(mat_a, mat_b)    
+    t1 = omp_get_wtime()
 
-    ! Print result
-    do i = 1, size
-        do j = 1, size
-            print *, mat_c(i, j) 
-        enddo
-        print *, "\n"
-    enddo
+    !$omp parallel workshare
 
+        mat_c = matmul(mat_a, mat_b)    
+        
+    !$omp end parallel workshare
 
-    !$omp parallel
+    t2 = omp_get_wtime()
 
-        ! print *, "Hello from process: ", omp_get_thread_num()
+    ! Print matrix C result and time elapsed
+    ! do i = 1, size
+    !     do j = 1, size
+    !         print *, mat_c(i, j) 
+    !     enddo
+    !     print *, ''
+    ! enddo
 
-    !$omp end parallel
+    print *, 'Walltime elapsed', t2 - t1
 
 end program mat_v2

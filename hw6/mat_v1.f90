@@ -11,9 +11,9 @@ program mat_v1
 
     implicit none
 
-    integer :: size = 4
+    integer :: size = 1000 ! Size of all three matrix
     integer :: i, j, k
-    real, dimension(4, 4) :: mat_a, mat_b, mat_c ! C = A*B
+    real, dimension(1000, 1000) :: mat_a, mat_b, mat_c ! C = A*B
     double precision :: t1, t2
 
     ! Initialize matrix
@@ -39,12 +39,12 @@ program mat_v1
     t2 = omp_get_wtime()
 
     ! Print matrix C result and time elapsed
-    do i = 1, size
-        do j = 1, size
-            print *, mat_c(i, j) 
-        enddo
-        print *, ''
-    enddo
+    ! do i = 1, size
+    !     do j = 1, size
+    !         print *, mat_c(i, j) 
+    !     enddo
+    !     print *, ''
+    ! enddo
 
     print *, 'Walltime elapsed', t2 - t1
 
