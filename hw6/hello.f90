@@ -9,9 +9,12 @@ program hello
 
     implicit none
 
-    !$omp parallel
+    integer :: thread_id
 
-        print *, "Hello from process: ", omp_get_thread_num()
+    !$omp parallel private(thread_id)
+
+        thread_id = omp_get_thread_num()
+        print *, "Hello from process: ", thread_id
 
     !$omp end parallel
 
