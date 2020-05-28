@@ -11,9 +11,9 @@ program mat_v2
 
     implicit none
 
-    integer :: size = 1000 ! Size of all three matrix
+    integer, parameter :: size = 2000 ! Size of all three matrix
     integer :: i, j, k
-    real, dimension(1000, 1000) :: mat_a, mat_b, mat_c ! C = A*B
+    real, dimension(size, size) :: mat_a, mat_b, mat_c ! C = A*B
     double precision :: t1, t2
 
     ! Initialize matrix
@@ -23,6 +23,7 @@ program mat_v2
 
     t1 = omp_get_wtime()
 
+    ! Main matrix computation
     !$omp parallel workshare
 
         mat_c = matmul(mat_a, mat_b)    
