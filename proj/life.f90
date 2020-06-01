@@ -59,8 +59,12 @@ program main
                 num_live_neighbors = sum(count(cells(i-1:i+1, j-1:j+1), 1))
             endif
 
-            if (num_live_neighbors .ge. 3) then
+            if (num_live_neighbors .eq. 3) then
                 buffer(i, j) = .true.
+            elseif (num_live_neighbors .eq. 2) then
+                ! Do nothing
+            else
+                buffer(i, j) = .false.
             endif
 
             print *, num_live_neighbors
