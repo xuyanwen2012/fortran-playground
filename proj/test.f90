@@ -1,6 +1,12 @@
 program p
     implicit none
     
+    ! width and height are the actual board size
+    ! A should be the actual 2D board (w*h), which should be passed in from the main thread
+    ! B, C is a strip (1*h) which should be send from left, right neighbor, respectively
+    ! D is the augmented board which should include all ghost cells (w+2)*(h+2)
+    ! But when we do the simulation, we should only work on 
+    ! from (2, 2) to (w+1, h+1)
     integer, parameter :: width = 4
     integer, parameter :: height = 4
     integer, dimension(width, height) :: a 
@@ -29,12 +35,16 @@ program p
     d(1, :) = d(height + 1, :)
     d(height + 2, :) = d(2, :)
 
-    ! do i = 1, height
-        
-    ! enddo
+    ! Do game of life simulation from (2, 2) to (w+1, h+1)
 
+    do i = 2, height + 1
+        do j = 2, width + 1
+            d(i, j) = d(i, j) + 80
+        enddo
+    enddo
+
+    ! Print the board
     print *, ''
-
     do i = 1, height + 2
         do j = 1, width + 2
             write(*, '(I3)', advance='no') d(i, j)
