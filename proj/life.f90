@@ -33,8 +33,8 @@ program main
 
     ! [height], [width] is the actual board size of this **particular thread**
     ! TODO: Should be dynamic????
-    integer, parameter :: height = 4
-    integer, parameter :: width = 4
+    integer, parameter :: height = global_height
+    integer :: width
 
     ! [recv_buffer] is the raw 1D buffer recieved from MPI_SCATTER
     ! which is intented to be reshaped to 2D.
@@ -42,12 +42,15 @@ program main
     ! [recv_cells] should be the actual 2D board (w*h) and it is **LOCAL**
     ! which should be passed in from the main thread.
     ! 
-    ! [aug_cells] augmented cells, which should have 2 more lines of information
+    ! [aug_cells] augmented cells, which should include Ghost cells. 2 more
     ! than the [recv_cells]. But when we do the simulation, we should only 
     ! work on the area from (2, 2) to (w+1, h+1)
-    integer, dimension(height, width) :: recv_buffer
-    integer, dimension(height, width) :: recv_cells
-    integer, dimension(height + 2, width + 2) :: aug_cells
+    integer, dimension(:), allocatable :: recv_buffer
+    integer, dimension(:, :), allocatable :: recv_cells
+    integer, dimension(:, :), allocatable :: aug_cells
+    ! integer, dimension(height, width) :: recv_buffer
+    ! integer, dimension(height, width) :: recv_cells
+    ! integer, dimension(height + 2, width + 2) :: aug_cells
 
     ! [rev_left] and [rev_right] are strip (1*h), i.e. The local Ghost buffer
     ! which should be recieved from tge left, the right neighbor, respectively
@@ -62,7 +65,7 @@ program main
 
     integer :: num_cell_per_task
 
-    integer :: i, j, k
+    integer :: i, j
     ! integer :: num_live_neighbors
 
     ! ---------------------------------------------------------------------
@@ -73,39 +76,51 @@ program main
     call MPI_COMM_RANK(MPI_COMM_WORLD, my_rank, ierr)
     call MPI_COMM_SIZE(MPI_COMM_WORLD, num_procs, ierr)
 
-    ! Temporary check, subject to remove
-    if (modulo(global_width, num_procs) .ne. 0) then
-        print *, ("width and height of the world can not divid by number of processors!")
-        call exit(0)
-    endif
-
     ! MPI related: Compute the neighbor ranks
     left_procs = modulo(my_rank - 1, num_procs)
     right_procs = modulo(my_rank + 1, num_procs)
 
-    ! Debug Print, remove this when finished
-    ! print *, &
-    ! "At rank ", my_rank , &
-    ! "left_procs", left_procs, &
-    ! "right_procs", right_procs, &
-    ! ", sub-width = ", (global_width / num_procs)
-
-    ! Initialize main cell 
-    if (my_rank .eq. root_rank) then
-
-    endif
-
-    ! Initialize World  
+    ! ---------------------------------------------------------------------
+    ! Initialize Global World  
     ! Example: [A] should look like this (4x4)
     !
     ! 1  5  9 13
     ! 2  6 10 14
     ! 3  7 11 15
     ! 4  8 12 16
+    ! ---------------------------------------------------------------------
+
     global_cells = reshape((/ (i, i = 1,  global_height * global_width) /), (/global_height, global_width/))
 
+    ! ---------------------------------------------------------------------
+    ! Allocate memory for all the dynamic arrays
+    ! ---------------------------------------------------------------------
+
+    ! Temporary check, subject to remove
+    if (modulo(global_width, num_procs) .ne. 0) then
+        print *, ("width and height of the world can not divid by number of processors!")
+        call exit(0)
+    endif
+
+    width = global_width / num_procs
+
+    allocate (recv_buffer(width * height))
+    allocate (recv_cells(height, width))
+    allocate (aug_cells(height + 2, width + 2))
+
+    ! ! Debug Print, remove this when finished
+    ! ! print *, &
+    ! ! "At rank ", my_rank , &
+    ! ! "left_procs", left_procs, &
+    ! ! "right_procs", right_procs, &
+    ! ! ", sub-width = ", (global_width / num_procs)
+
+    ! ---------------------------------------------------------------------
     ! Scatter and distribute the board to processes
+    ! ---------------------------------------------------------------------
+
     num_cell_per_task = (global_height * global_width) / num_procs
+    ! or maybe just width * height
 
     call MPI_SCATTER(global_cells, num_cell_per_task, MPI_INTEGER, &
                      recv_buffer, num_cell_per_task, MPI_INTEGER, &
@@ -148,7 +163,9 @@ program main
     call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, itag, MPI_COMM_WORLD, istat, ierr)
     call MPI_RECV(rev_right, height, MPI_INTEGER, right_procs, itag, MPI_COMM_WORLD, istat, ierr)
 
+    ! ---------------------------------------------------------------------
     ! Prepare the augmented cells
+    ! ---------------------------------------------------------------------
 
     ! Copy [A] to [D]
     aug_cells(2 : height + 1, 2 : width + 1) = recv_cells
@@ -203,6 +220,11 @@ program main
         print *, ''
     endif
 
+    ! ---------------------------------------------------------------------
+    ! Do Game-of-Life Simulation logics
+    ! Our primary board to work on is 
+    ! ---------------------------------------------------------------------
+
     ! do k = 1, 10
     !     ! Clone the state of the universe, do the update on the buffer. 
     !     buffer = cells
@@ -249,7 +271,18 @@ program main
         
     ! end do
 
-    ! End MPI
+    ! ---------------------------------------------------------------------
+    ! Code: Collect & Gather the information
+    ! ---------------------------------------------------------------------
+
+    ! ---------------------------------------------------------------------
+    ! Code: Finish MPI
+    ! ---------------------------------------------------------------------
+
+    deallocate (recv_buffer) 
+    deallocate (recv_cells) 
+    deallocate (aug_cells) 
+
     call MPI_FINALIZE(ierr)
 
 end program main
