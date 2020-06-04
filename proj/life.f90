@@ -23,8 +23,8 @@ program main
     ! ---------------------------------------------------------------------
     ! Game-of-Life(GoF) related parameters
     ! ---------------------------------------------------------------------
-    integer, parameter :: global_height = 4
-    integer, parameter :: global_width = 16
+    integer, parameter :: global_height = 5
+    integer, parameter :: global_width = 20
     integer, dimension(global_height, global_width) :: global_cells
     integer :: num_live_neighbors = 0
 
@@ -91,8 +91,24 @@ program main
     ! ---------------------------------------------------------------------
 
     ! global_cells = reshape((/ (i, i = 1,  global_height * global_width) /), (/global_height, global_width/))
+    ! global_cells(2, 1:3) = 1
     global_cells = 0
-    global_cells(2, 1:3) = 1
+    global_cells(2, 1) = 1
+    global_cells(3, 2) = 1
+    global_cells(3, 3) = 1
+    global_cells(1, 3) = 1
+    global_cells(2, 3) = 1
+    
+    if (my_rank .eq. 0) then
+        print *, '----- Initial board ------'
+        do i = 1, global_height
+            do j = 1, global_width
+                write(*, '(I3)', advance='no') global_cells(i, j)
+            end do
+            print *, ''
+        end do
+        print *, ''
+    end if
 
     ! ---------------------------------------------------------------------
     ! Allocate memory for all the dynamic arrays
@@ -192,17 +208,17 @@ program main
         ! 24  4  8 12 16 34
         ! 21  1  5  9 13 31
 
-        if (my_rank .eq. root_rank) then
-            ! Print the board
-            print *, 'The augmented cells'
-            do i = 1, height + 2
-                do j = 1, width + 2
-                    write(*, '(I3)', advance='no') aug_cells(i, j)
-                end do
-                print *, ''
-            end do
-            print *, ''
-        end if
+        ! if (my_rank .eq. root_rank) then
+        !     ! Print the board
+        !     print *, 'The augmented cells'
+        !     do i = 1, height + 2
+        !         do j = 1, width + 2
+        !             write(*, '(I3)', advance='no') aug_cells(i, j)
+        !         end do
+        !         print *, ''
+        !     end do
+        !     print *, ''
+        ! end if
 
     ! ---------------------------------------------------------------------
     ! Do Game-of-Life Simulation logics
@@ -233,17 +249,17 @@ program main
             end do
         end do
 
-        if (my_rank .eq. root_rank) then
-            ! Print the board
-            print *, 'After GoF:'
-            do i = 1, height
-                do j = 1, width
-                    write(*, '(I3)', advance='no') recv_cells(i, j)
-                end do
-                print *, ''
-            end do
-            print *, ''
-        end if
+        ! if (my_rank .eq. root_rank) then
+        !     ! Print the board
+        !     print *, 'After GoF:'
+        !     do i = 1, height
+        !         do j = 1, width
+        !             write(*, '(I3)', advance='no') recv_cells(i, j)
+        !         end do
+        !         print *, ''
+        !     end do
+        !     print *, ''
+        ! end if
 
     end do
 
