@@ -100,7 +100,7 @@ program main
 
     ! Temporary check, subject to remove
     if (modulo(global_width, num_procs) .ne. 0) then
-        print *, ("width and height of the world can not divid by number of processors!")
+        print *, ("width of the world can not divid by number of processors!")
         call exit(0)
     end if
 
@@ -109,13 +109,6 @@ program main
     allocate (recv_buffer(width * height))
     allocate (recv_cells(height, width))
     allocate (aug_cells(height + 2, width + 2))
-
-    ! ! Debug Print, remove this when finished
-    ! ! print *, &
-    ! ! "At rank ", my_rank , &
-    ! ! "left_procs", left_procs, &
-    ! ! "right_procs", right_procs, &
-    ! ! ", sub-width = ", (global_width / num_procs)
 
     ! ---------------------------------------------------------------------
     ! Scatter and distribute the board to processes
@@ -150,6 +143,10 @@ program main
 
     call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
+    ! ---------------------------------------------------------------------
+    ! MPI Communication: send edges to other procs as ghost cells
+    ! ---------------------------------------------------------------------
+
     ! call MPI_Sendrecv( & 
     !     loc_left, height, MPI_LOGICAL, left_procs, itag, &
     !     rev_left, height, MPI_LOGICAL, left_procs, itag, &
@@ -160,10 +157,17 @@ program main
     !     rev_right, height, MPI_INTEGER, right_procs, itag, &
     !     MPI_COMM_WORLD, istat, ierr)
 
-    call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, itag, MPI_COMM_WORLD, irequest, ierr)
-    call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, itag, MPI_COMM_WORLD, irequest, ierr)
-    call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, itag, MPI_COMM_WORLD, istat, ierr)
-    call MPI_RECV(rev_right, height, MPI_INTEGER, right_procs, itag, MPI_COMM_WORLD, istat, ierr)
+    call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, & 
+                   itag, MPI_COMM_WORLD, irequest, ierr)
+
+    call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, &
+                   itag, MPI_COMM_WORLD, irequest, ierr)
+    
+    call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, &
+                  itag, MPI_COMM_WORLD, istat, ierr)
+    
+    call MPI_RECV(rev_right, height, MPI_INTEGER, right_procs, & 
+                  itag, MPI_COMM_WORLD, istat, ierr)
 
     ! ---------------------------------------------------------------------
     ! Prepare the augmented cells
