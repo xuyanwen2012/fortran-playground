@@ -26,13 +26,13 @@ program main
     integer, parameter :: global_height = 4
     integer, parameter :: global_width = 16
     integer, dimension(global_height, global_width) :: global_cells
+    integer :: num_live_neighbors = 0
 
     ! ---------------------------------------------------------------------
     ! Parellel GoF related parameters
     ! ---------------------------------------------------------------------
 
     ! [height], [width] is the actual board size of this **particular thread**
-    ! TODO: Should be dynamic????
     integer, parameter :: height = global_height
     integer :: width
 
@@ -40,7 +40,9 @@ program main
     ! which is intented to be reshaped to 2D.
     !
     ! [recv_cells] should be the actual 2D board (w*h) and it is **LOCAL**
-    ! which should be passed in from the main thread.
+    ! which will be used twice: 
+    ! 1) first we use it to recieve board from MPI_SCATTER
+    ! 2) then we use it to send back to main when MPI_GATHER
     ! 
     ! [aug_cells] augmented cells, which should include Ghost cells. 2 more
     ! than the [recv_cells]. But when we do the simulation, we should only 
@@ -64,9 +66,7 @@ program main
     integer :: left_procs, right_procs
 
     integer :: num_cell_per_task
-
     integer :: i, j
-    ! integer :: num_live_neighbors
 
     ! ---------------------------------------------------------------------
     ! Code: Start MPI
@@ -90,7 +90,9 @@ program main
     ! 4  8 12 16
     ! ---------------------------------------------------------------------
 
-    global_cells = reshape((/ (i, i = 1,  global_height * global_width) /), (/global_height, global_width/))
+    ! global_cells = reshape((/ (i, i = 1,  global_height * global_width) /), (/global_height, global_width/))
+    global_cells = 0
+    global_cells(2, :) = 1
 
     ! ---------------------------------------------------------------------
     ! Allocate memory for all the dynamic arrays
@@ -100,7 +102,7 @@ program main
     if (modulo(global_width, num_procs) .ne. 0) then
         print *, ("width and height of the world can not divid by number of processors!")
         call exit(0)
-    endif
+    end if
 
     width = global_width / num_procs
 
@@ -137,11 +139,11 @@ program main
         do i = 1, height
             do j = 1, width
                 write(*, '(I3)', advance='no') recv_cells(i, j)
-            enddo
+            end do
             print *, ''
-        enddo
+        end do
         print *, ''
-    endif
+    end if
 
     loc_left = recv_cells(:, 1)
     loc_right = recv_cells(:, width)
@@ -210,70 +212,80 @@ program main
 
     if (my_rank .eq. root_rank) then
         ! Print the board
-        print *, ''
+        print *, 'The augmented cells'
         do i = 1, height + 2
             do j = 1, width + 2
                 write(*, '(I3)', advance='no') aug_cells(i, j)
-            enddo
+            end do
             print *, ''
-        enddo
+        end do
         print *, ''
-    endif
+    end if
 
     ! ---------------------------------------------------------------------
     ! Do Game-of-Life Simulation logics
-    ! Our primary board to work on is 
+    !
+    ! Note: work only on the area from (2, 2) to (w+1, h+1)
     ! ---------------------------------------------------------------------
 
-    ! do k = 1, 10
-    !     ! Clone the state of the universe, do the update on the buffer. 
-    !     buffer = cells
+    do i = 2, height + 1
+        do j = 2, width + 1
 
-    !     ! Tick the universe, note Fortran is column major 
-    !     do j= 1, height
-    !         do i= 1, width
+            ! Count number of live neighbors at cell (i, j)
+            num_live_neighbors = sum(aug_cells(i - 1:i + 1, j - 1:j + 1))
 
-    !             ! Count number of live neighbors at cell (i, j)
-    !             if (cells(i, j)) then
-    !                 num_live_neighbors = sum(count(cells(i-1:i+1, j-1:j+1), 1)) - 1
-    !             else
-    !                 num_live_neighbors = sum(count(cells(i-1:i+1, j-1:j+1), 1))
-    !             end if
+            if (aug_cells(i, j) .ne. 0) then
+                num_live_neighbors = num_live_neighbors - 1
+            end if
 
-    !             ! Perform GoF calculation, update the buffer
-    !             select case (num_live_neighbors)
-    !                 case (3)
-    !                     buffer(i, j) = .true.
-    !                 case (2)
-    !                     ! Do nothing
-    !                 case default
-    !                     buffer(i, j) = .false.
-    !             end select
 
-    !         end do
-    !     end do
+            ! Perform GoF simulation, update the buffer
+            select case (num_live_neighbors)
+                case (3)
+                    recv_cells(i - 1, j - 1) = 1
+                case (2)
+                    ! Do nothing
+                case default
+                    recv_cells(i - 1, j - 1) = 0
+            end select
 
-    !     ! Update cells
-    !     cells = buffer
+            ! recv_cells(i-1, j-1) = num_live_neighbors
 
-    !     ! temp print the universe
-    !     do i= 1, width
-    !         do j= 1, height
-    !             if (cells(i, j)) then
-    !                 write(*, '(A)', advance='no') "X"
-    !             else
-    !                 write(*, '(A)', advance='no') "O"
-    !             end if
-    !         end do
-    !         print *, ''
-    !     end do
-    !     print *, ''
-        
-    ! end do
+        end do
+    end do
+
+    if (my_rank .eq. root_rank) then
+        ! Print the board
+        print *, 'After GoF:'
+        do i = 1, height
+            do j = 1, width
+                write(*, '(I3)', advance='no') recv_cells(i, j)
+            end do
+            print *, ''
+        end do
+        print *, ''
+    end if
+
+    recv_buffer = pack(recv_cells, .true.)
 
     ! ---------------------------------------------------------------------
     ! Code: Collect & Gather the information
     ! ---------------------------------------------------------------------
+
+    call MPI_GATHER(recv_buffer, num_cell_per_task, MPI_INTEGER, &
+                    global_cells, num_cell_per_task, MPI_INTEGER, &
+                    root_rank, MPI_COMM_WORLD, ierr)
+
+    if (my_rank .eq. 0) then
+        print *, 'Final board:'
+        do i = 1, global_height
+            do j = 1, global_width
+                write(*, '(I3)', advance='no') global_cells(i, j)
+            end do
+            print *, ''
+        end do
+        print *, ''
+    end if
 
     ! ---------------------------------------------------------------------
     ! Code: Finish MPI
