@@ -116,6 +116,8 @@ program main
 
     if (my_rank .eq. 0) then
         print *, 'num_cell_per_task: ', num_cell_per_task
+        print *, 'height: ', height
+        print *, 'width: ', width
         ! Print the board
         do i = 1, height
             do j = 1, width
