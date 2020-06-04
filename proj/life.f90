@@ -13,14 +13,14 @@ program main
 
     integer :: ierr, my_rank, num_procs
     integer :: istat(MPI_STATUS_SIZE)
-    integer :: tag
+    integer :: itag, irequest
 
     ! Game-of-Life related parameters
 
     integer, parameter :: width = 4
     integer, parameter :: height = 4
-    logical, dimension(width, height) :: cells = .false.
-    logical, dimension(width, height) :: buffer
+    integer, dimension(width, height) :: cells = 0
+    integer, dimension(width, height) :: buffer
 
     integer :: i, j, k
     integer :: num_live_neighbors
@@ -28,10 +28,8 @@ program main
     ! Parellel GoF related parameters
     integer :: left_procs, right_procs ! the process id of left and right  
     integer :: start_col, end_col ! starting/ending column index
-    logical, dimension(height) :: loc_left, loc_right ! Local Ghost buffer (Sending out)
-    logical, dimension(height) :: rev_left, rev_right ! Local Ghost buffer (Recieved)
-    integer :: send_count
-
+    integer, dimension(height) :: loc_left, loc_right ! Local Ghost buffer (Sending out)
+    integer, dimension(height) :: rev_left, rev_right ! Local Ghost buffer (Recieved)
 
     ! Start MPI
     call MPI_INIT(ierr)
@@ -40,8 +38,29 @@ program main
 
     ! Initialize a universe, 
     ! 
-    cells(2, 1:3) = .true.
+    cells(2, 1:3) = 1
 
+    ! In fortran,  The first subscript represents row number, and the second column number.
+    !    A(1,1)    A(1,2) . . .    A(1,m)
+    !    A(2,1)    A(2,2) . . .    A(2,m)
+    !    ......
+    !    A(n,1)    A(n,2) . . .    A(n,m)
+    ! if (my_rank .eq. 0) then
+    !     ! temp print the universe
+    !     do i = 1, height
+    !         do j = 1, width
+    !             if (cells(i, j) .ne. 0) then
+    !                 write(*, '(A)', advance='no') "X"
+    !             else
+    !                 write(*, '(A)', advance='no') "O"
+    !             end if
+    !         end do
+    !         print *, ''
+    !     end do
+    !     print *, ''
+    ! endif
+
+    ! call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
     ! Temporary check, subject change later
     if (modulo(width, num_procs) .ne. 0) then
@@ -57,52 +76,55 @@ program main
     left_procs = modulo(my_rank - 1, num_procs)
     right_procs = modulo(my_rank + 1, num_procs)
 
-    ! Debug Print, ignore
+    ! Debug Print, remove this when finished
     print *, &
     "At rank ", my_rank , &
     ! "left_procs", left_procs, &
     ! "right_procs", right_procs, &
-    ! ", sub-width = ", (width / num_procs), &
+    ", sub-width = ", (width / num_procs), &
     ", from column ", start_col, &
     " to ", end_col
 
-    loc_left = cells(start_col, :)
-    loc_right = cells(end_col, :)
+    loc_left = cells(:, start_col)
+    loc_right = cells(:, end_col)
+
+    ! print *, "loc_left:"
+    ! do i = 1, height
+    !     print *, loc_left(i)
+    ! enddo
+
+    ! print *, "loc_right:"
+    ! do i = 1, height
+    !     print *, loc_right(i)
+    ! enddo
 
     call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
-    call MPI_SEND(loc_left, height, MPI_LOGICAL, left_procs, tag, MPI_COMM_WORLD, ierr)
-    call MPI_SEND(loc_right, height, MPI_LOGICAL, right_procs, tag, MPI_COMM_WORLD, ierr)
+    ! call MPI_Sendrecv( & 
+    !     loc_left, height, MPI_LOGICAL, left_procs, itag, &
+    !     rev_left, height, MPI_LOGICAL, left_procs, itag, &
+    !     MPI_COMM_WORLD, istat, ierr)
 
-    call MPI_RECV(rev_left, height, MPI_LOGICAL, left_procs, tag, MPI_COMM_WORLD, istat, ierr)
-    call MPI_RECV(rev_right, height, MPI_LOGICAL, right_procs, tag, MPI_COMM_WORLD, istat, ierr)
+    ! call MPI_Sendrecv( & 
+    !     loc_right, height, MPI_INTEGER, right_procs, itag, &
+    !     rev_right, height, MPI_INTEGER, right_procs, itag, &
+    !     MPI_COMM_WORLD, istat, ierr)
+
+    call MPI_Isend(loc_left, height, MPI_INTEGER, left_procs, itag, MPI_COMM_WORLD, irequest, ierr)
+    call MPI_Isend(loc_right, height, MPI_INTEGER, right_procs, itag, MPI_COMM_WORLD, irequest, ierr)
+    call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, itag, MPI_COMM_WORLD, istat, ierr)
+    call MPI_RECV(rev_right, height, MPI_INTEGER, right_procs, itag, MPI_COMM_WORLD, istat, ierr)
 
 
+    ! print *, "rev_left: (", my_rank
+    ! do i = 1, height
+    !     print *, rev_left(i)
+    ! enddo
 
-
-
-    ! temp print the universe
-    do i= 1, width
-        do j= 1, height
-            if (cells(i, j)) then
-                write(*, '(A)', advance='no') "X"
-            else
-                write(*, '(A)', advance='no') "O"
-            end if
-        end do
-        print *, ''
-    end do
-    print *, ''
-
-    ! Assuming we are on 4 x 4
-    !   | 1 2 3 4 (i)
-    ! _ | -------
-    ! 1 | 
-    ! 2 | 
-    ! 3 | 
-    ! 4 | 
-    ! (j)
-
+    ! print *, "rev_right: (", my_rank
+    ! do i = 1, height
+    !     print *, rev_right(i)
+    ! enddo
 
     ! do k = 1, 10
     !     ! Clone the state of the universe, do the update on the buffer. 
