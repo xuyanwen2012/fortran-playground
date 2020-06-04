@@ -1,86 +1,172 @@
 program main
 
+    ! ---------------------------------------------------------------------
     ! Yanwen Xu
     ! yxu83@ucsc.edu
     ! AM 250 
     ! Final Project - Game of Life  
+    ! ---------------------------------------------------------------------
 
     use mpi
 
     implicit none
     
+    ! ---------------------------------------------------------------------
     ! MPI related parameters
+    ! ---------------------------------------------------------------------
 
-    integer :: ierr, my_rank, num_procs
-    integer :: istat(MPI_STATUS_SIZE)
-    integer :: itag, irequest
     integer, parameter :: root_rank = 0
+    integer :: ierr, my_rank, num_procs
+    integer :: itag, irequest
+    integer :: istat(MPI_STATUS_SIZE)
 
-    ! Game-of-Life related parameters
+    ! ---------------------------------------------------------------------
+    ! Game-of-Life(GoF) related parameters
+    ! ---------------------------------------------------------------------
+    integer, parameter :: global_height = 4
+    integer, parameter :: global_width = 16
+    integer, dimension(global_height, global_width) :: global_cells
 
-    integer, parameter :: width = 4
+    ! ---------------------------------------------------------------------
+    ! Parellel GoF related parameters
+    ! ---------------------------------------------------------------------
+
+    ! [height], [width] is the actual board size of this **particular thread**
     integer, parameter :: height = 4
-    integer, dimension(width, height) :: cells = 0
-    integer, dimension(width, height) :: buffer = 0
+    integer, parameter :: width = 4
+
+    ! [recv_buffer] is the raw 1D buffer recieved from MPI_SCATTER
+    ! which is intented to be reshaped to 2D.
+    !
+    ! [recv_cells] should be the actual 2D board (w*h) and it is **LOCAL**
+    ! which should be passed in from the main thread.
+    ! 
+    ! [aug_cells] augmented cells, which should have 2 more lines of information
+    ! than the [recv_cells]. But when we do the simulation, we should only 
+    ! work on the area from (2, 2) to (w+1, h+1)
+    integer, dimension(height, width) :: recv_buffer
+    integer, dimension(height, width) :: recv_cells
+    integer, dimension(height + 2, width + 2) :: aug_cells
+
+    ! [rev_left] and [rev_right] are strip (1*h), i.e. The local Ghost buffer
+    ! which should be recieved from tge left, the right neighbor, respectively
+    ! 
+    ! [loc_left] and [loc_right] are out sending local buffer,  
+    ! which are essentially: cells(1, :) and cell(:, width)
+    integer, dimension(height) :: rev_left, rev_right 
+    integer, dimension(height) :: loc_left, loc_right 
+
+    ! For MPI use only: the process id of left and right neighbor
+    integer :: left_procs, right_procs
+
+    integer :: num_cell_per_task
 
     integer :: i, j, k
-    integer :: num_live_neighbors
+    ! integer :: num_live_neighbors
 
-    ! Parellel GoF related parameters
-    integer :: left_procs, right_procs ! the process id of left and right  
-    integer :: start_col, end_col ! starting/ending column index
-    integer, dimension(height) :: loc_left, loc_right ! Local Ghost buffer (Sending out)
-    integer, dimension(height) :: rev_left, rev_right ! Local Ghost buffer (Recieved)
-    integer :: num_cell_per_task
-    integer, dimension(width, height) :: recv_buffer = 0
+    ! ---------------------------------------------------------------------
+    ! Code: Start MPI
+    ! ---------------------------------------------------------------------
 
-    ! Start MPI
     call MPI_INIT(ierr)
     call MPI_COMM_RANK(MPI_COMM_WORLD, my_rank, ierr)
     call MPI_COMM_SIZE(MPI_COMM_WORLD, num_procs, ierr)
 
-    ! Initialize a universe, 
-    ! 
-    cells(2, 1:3) = 1
-
-    ! In fortran,  The first subscript represents row number, and the second column number.
-    !    A(1,1)    A(1,2) . . .    A(1,m)
-    !    A(2,1)    A(2,2) . . .    A(2,m) 
-    !    ......
-    !    A(n,1)    A(n,2) . . .    A(n,m)
-    ! if (my_rank .eq. 0) then
-    !     ! temp print the universe
-    !     do i = 1, height
-    !         do j = 1, width
-    !             if (cells(i, j) .ne. 0) then
-    !                 write(*, '(A)', advance='no') "X"
-    !             else
-    !                 write(*, '(A)', advance='no') "O"
-    !             end if
-    !         end do
-    !         print *, ''
-    !     end do
-    !     print *, ''
-    ! endif
-
-    ! call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-
-    ! Temporary check, subject change later
-    if (modulo(width, num_procs) .ne. 0) then
+    ! Temporary check, subject to remove
+    if (modulo(global_width, num_procs) .ne. 0) then
         print *, ("width and height of the world can not divid by number of processors!")
         call exit(0)
     endif
 
+    ! MPI related: Compute the neighbor ranks
+    left_procs = modulo(my_rank - 1, num_procs)
+    right_procs = modulo(my_rank + 1, num_procs)
 
-    ! Compute
-    start_col = (width / num_procs) * my_rank + 1
-    end_col = start_col + (width / num_procs) - 1
+    ! Initialize main cell 
+    if (my_rank .eq. root_rank) then
+
+    endif
+
+    ! Initialize World  
+    ! Example: A should look like this (4x4)
+    !
+    ! 1  5  9 13
+    ! 2  6 10 14
+    ! 3  7 11 15
+    ! 4  8 12 16
+    global_cells = reshape((/ (i, i = 1,  global_height * global_width) /), (/global_height, global_width/))
+
+    ! Scatter and distribute the board to processes
+    num_cell_per_task = (global_height * global_width) / num_procs
+
+    call MPI_SCATTER(global_cells, num_cell_per_task, MPI_INTEGER, &
+                     recv_buffer, num_cell_per_task, MPI_INTEGER, &
+                     root_rank, MPI_COMM_WORLD, ierr)
+
+    ! Convert recieved 1D raw buffer into 2D local cells
+    recv_cells = reshape(recv_buffer, (/height, width/))
+
+    if (my_rank .eq. 0) then
+        print *, 'num_cell_per_task: ', num_cell_per_task
+        ! Print the board
+        do i = 1, height
+            do j = 1, width
+                write(*, '(I3)', advance='no') recv_cells(i, j)
+            enddo
+            print *, ''
+        enddo
+        print *, ''
+    endif
+
+    loc_left = recv_cells(:, 1)
+    loc_right = recv_cells(:, width)
+
+    call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
+    call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, itag, MPI_COMM_WORLD, irequest, ierr)
+    call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, itag, MPI_COMM_WORLD, irequest, ierr)
+    call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, itag, MPI_COMM_WORLD, istat, ierr)
+    call MPI_RECV(rev_right, height, MPI_INTEGER, right_procs, itag, MPI_COMM_WORLD, istat, ierr)
+
+    ! Prepare augmented cells
+    ! Copy a to d
+    aug_cells(2 : height + 1, 2 : width + 1) = recv_cells
+
+    ! Copy b, c to d
+    aug_cells(2 : height + 1, 1) = rev_left
+    aug_cells(2 : height + 1, width + 2) = rev_right
+
+    ! Copy d's top and bottom
+    aug_cells(1, :) = aug_cells(height + 1, :)
+    aug_cells(height + 2, :) = aug_cells(2, :)
+
+    ! At this point, we should have all we need per thread
+    ! Example: D should look like this (6x6)
+    ! 
+    ! 24  4  8 12 16 34
+    ! 21  1  5  9 13 31
+    ! 22  2  6 10 14 32
+    ! 23  3  7 11 15 33
+    ! 24  4  8 12 16 34
+    ! 21  1  5  9 13 31
+
+    if (my_rank .eq. root_rank) then
+        ! Print the board
+        print *, ''
+        do i = 1, height + 2
+            do j = 1, width + 2
+                write(*, '(I3)', advance='no') aug_cells(i, j)
+            enddo
+            print *, ''
+        enddo
+        print *, ''
+    endif
 
 
-    num_cell_per_task = (width * height) / num_procs
-    call MPI_SCATTER(cells, num_cell_per_task, MPI_INTEGER, &
-                     recv_buffer, num_cell_per_task, MPI_INTEGER, root_rank, &
-                     MPI_COMM_WORLD, ierr)
+
+    ! ! Compute
+    ! start_col = (width / num_procs) * my_rank + 1
+    ! end_col = start_col + (width / num_procs) - 1
 
 
     ! ! if (my_rank .eq. 0) then
@@ -98,11 +184,6 @@ program main
     !     print *, ''
     ! ! endif
 
-
-
-    ! Determine the neighbor ranks 
-    left_procs = modulo(my_rank - 1, num_procs)
-    right_procs = modulo(my_rank + 1, num_procs)
 
     ! ! Debug Print, remove this when finished
     ! print *, &

@@ -1,14 +1,33 @@
 program p
+    
+    ! Yanwen Xu
+    ! yxu83@ucsc.edu
+    ! AM 250 
+    ! Final Project - Game of Life  
+
+    use mpi
+
     implicit none
     
-    ! width and height are the actual board size
+    ! MPI related parameters
+
+    integer, parameter :: root_rank = 0
+    integer :: ierr, my_rank, num_procs
+    integer :: itag, irequest
+    integer :: istat(MPI_STATUS_SIZE)
+
+    ! Game-of-Life related parameters
+
+    ! width and height are the actual board size of this ***particular thread***
+    integer, parameter :: width = 4
+    integer, parameter :: height = 4
+
     ! A should be the actual 2D board (w*h), which should be passed in from the main thread
     ! B, C is a strip (1*h) which should be send from left, right neighbor, respectively
     ! D is the augmented board which should include all ghost cells (w+2)*(h+2)
     ! But when we do the simulation, we should only work on 
     ! from (2, 2) to (w+1, h+1)
-    integer, parameter :: width = 4
-    integer, parameter :: height = 4
+
     integer, dimension(width, height) :: a 
     integer, dimension(height) :: b, c
     integer, dimension(width + 2, height + 2) :: d = 0
