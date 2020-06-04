@@ -66,7 +66,7 @@ program main
     integer :: left_procs, right_procs
 
     integer :: num_cell_per_task
-    integer :: i, j
+    integer :: i, j, k
 
     ! ---------------------------------------------------------------------
     ! Code: Start MPI
@@ -138,14 +138,14 @@ program main
         print *, ''
     end if
 
+    ! ---------------------------------------------------------------------
+    ! MPI Communication: send edges to other procs as ghost cells
+    ! ---------------------------------------------------------------------
+
     loc_left = recv_cells(:, 1)
     loc_right = recv_cells(:, width)
 
     call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-
-    ! ---------------------------------------------------------------------
-    ! MPI Communication: send edges to other procs as ghost cells
-    ! ---------------------------------------------------------------------
 
     ! call MPI_Sendrecv( & 
     !     loc_left, height, MPI_LOGICAL, left_procs, itag, &
@@ -270,11 +270,11 @@ program main
         print *, ''
     end if
 
-    recv_buffer = pack(recv_cells, .true.)
-
     ! ---------------------------------------------------------------------
     ! Code: Collect & Gather the information
     ! ---------------------------------------------------------------------
+
+    recv_buffer = pack(recv_cells, .true.)
 
     call MPI_GATHER(recv_buffer, num_cell_per_task, MPI_INTEGER, &
                     global_cells, num_cell_per_task, MPI_INTEGER, &
