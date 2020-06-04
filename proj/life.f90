@@ -92,7 +92,7 @@ program main
 
     ! global_cells = reshape((/ (i, i = 1,  global_height * global_width) /), (/global_height, global_width/))
     global_cells = 0
-    global_cells(2, :) = 1
+    global_cells(2, 1:3) = 1
 
     ! ---------------------------------------------------------------------
     ! Allocate memory for all the dynamic arrays
@@ -124,107 +124,85 @@ program main
     ! Convert recieved 1D raw buffer into 2D local cells
     recv_cells = reshape(recv_buffer, (/height, width/))
 
-    if (my_rank .eq. 0) then
-        print *, 'num_cell_per_task: ', num_cell_per_task
-        print *, 'height: ', height
-        print *, 'width: ', width
-        ! Print the board
-        do i = 1, height
-            do j = 1, width
-                write(*, '(I3)', advance='no') recv_cells(i, j)
-            end do
-            print *, ''
-        end do
-        print *, ''
-    end if
-
     ! ---------------------------------------------------------------------
     ! MPI Communication: send edges to other procs as ghost cells
     ! ---------------------------------------------------------------------
 
-    loc_left = recv_cells(:, 1)
-    loc_right = recv_cells(:, width)
+    do k = 1, 4
 
-    call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+        loc_left = recv_cells(:, 1)
+        loc_right = recv_cells(:, width)
 
-    ! call MPI_Sendrecv( & 
-    !     loc_left, height, MPI_LOGICAL, left_procs, itag, &
-    !     rev_left, height, MPI_LOGICAL, left_procs, itag, &
-    !     MPI_COMM_WORLD, istat, ierr)
+        call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
-    ! call MPI_Sendrecv( & 
-    !     loc_right, height, MPI_INTEGER, right_procs, itag, &
-    !     rev_right, height, MPI_INTEGER, right_procs, itag, &
-    !     MPI_COMM_WORLD, istat, ierr)
+        call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, & 
+                       itag, MPI_COMM_WORLD, irequest, ierr)
 
-    call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, & 
-                   itag, MPI_COMM_WORLD, irequest, ierr)
+        call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, &
+                       itag, MPI_COMM_WORLD, irequest, ierr)
+        
+        call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, &
+                      itag, MPI_COMM_WORLD, istat, ierr)
+        
+        call MPI_RECV(rev_right, height, MPI_INTEGER, right_procs, & 
+                      itag, MPI_COMM_WORLD, istat, ierr)
 
-    call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, &
-                   itag, MPI_COMM_WORLD, irequest, ierr)
-    
-    call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, &
-                  itag, MPI_COMM_WORLD, istat, ierr)
-    
-    call MPI_RECV(rev_right, height, MPI_INTEGER, right_procs, & 
-                  itag, MPI_COMM_WORLD, istat, ierr)
+        ! ---------------------------------------------------------------------
+        ! Prepare the augmented cells
+        ! ---------------------------------------------------------------------
 
-    ! ---------------------------------------------------------------------
-    ! Prepare the augmented cells
-    ! ---------------------------------------------------------------------
+        ! Copy [A] to [D]
+        aug_cells(2 : height + 1, 2 : width + 1) = recv_cells
 
-    ! Copy [A] to [D]
-    aug_cells(2 : height + 1, 2 : width + 1) = recv_cells
+        ! At this point, we should have all we need per thread
+        ! Example: [D] should look like this (6x6)
+        ! 
+        !  0  0  0  0  0  0
+        !  0  1  5  9 13  0
+        !  0  2  6 10 14  0
+        !  0  3  7 11 15  0
+        !  0  4  8 12 16  0
+        !  0  0  0  0  0  0
 
-    ! At this point, we should have all we need per thread
-    ! Example: [D] should look like this (6x6)
-    ! 
-    !  0  0  0  0  0  0
-    !  0  1  5  9 13  0
-    !  0  2  6 10 14  0
-    !  0  3  7 11 15  0
-    !  0  4  8 12 16  0
-    !  0  0  0  0  0  0
+        ! Copy [B], [C] to [D]
+        aug_cells(2 : height + 1, 1) = rev_left
+        aug_cells(2 : height + 1, width + 2) = rev_right
 
-    ! Copy [B], [C] to [D]
-    aug_cells(2 : height + 1, 1) = rev_left
-    aug_cells(2 : height + 1, width + 2) = rev_right
+        ! At this point, we should have all we need per thread
+        ! Example: [D] should look like this (6x6)
+        ! 
+        !  0  0  0  0  0  0
+        ! 21  1  5  9 13 31
+        ! 22  2  6 10 14 32
+        ! 23  3  7 11 15 33
+        ! 24  4  8 12 16 34
+        !  0  0  0  0  0  0
 
-    ! At this point, we should have all we need per thread
-    ! Example: [D] should look like this (6x6)
-    ! 
-    !  0  0  0  0  0  0
-    ! 21  1  5  9 13 31
-    ! 22  2  6 10 14 32
-    ! 23  3  7 11 15 33
-    ! 24  4  8 12 16 34
-    !  0  0  0  0  0  0
+        ! Copy [d]'s top and bottom row
+        aug_cells(1, :) = aug_cells(height + 1, :)
+        aug_cells(height + 2, :) = aug_cells(2, :)
 
-    ! Copy [d]'s top and bottom row
-    aug_cells(1, :) = aug_cells(height + 1, :)
-    aug_cells(height + 2, :) = aug_cells(2, :)
+        ! At this point, we should have all we need per thread
+        ! Example: [D] should look like this (6x6)
+        ! 
+        ! 24  4  8 12 16 34
+        ! 21  1  5  9 13 31
+        ! 22  2  6 10 14 32
+        ! 23  3  7 11 15 33
+        ! 24  4  8 12 16 34
+        ! 21  1  5  9 13 31
 
-    ! At this point, we should have all we need per thread
-    ! Example: [D] should look like this (6x6)
-    ! 
-    ! 24  4  8 12 16 34
-    ! 21  1  5  9 13 31
-    ! 22  2  6 10 14 32
-    ! 23  3  7 11 15 33
-    ! 24  4  8 12 16 34
-    ! 21  1  5  9 13 31
-
-    if (my_rank .eq. root_rank) then
-        ! Print the board
-        print *, 'The augmented cells'
-        do i = 1, height + 2
-            do j = 1, width + 2
-                write(*, '(I3)', advance='no') aug_cells(i, j)
+        if (my_rank .eq. root_rank) then
+            ! Print the board
+            print *, 'The augmented cells'
+            do i = 1, height + 2
+                do j = 1, width + 2
+                    write(*, '(I3)', advance='no') aug_cells(i, j)
+                end do
+                print *, ''
             end do
             print *, ''
-        end do
-        print *, ''
-    end if
+        end if
 
     ! ---------------------------------------------------------------------
     ! Do Game-of-Life Simulation logics
@@ -232,43 +210,42 @@ program main
     ! Note: work only on the area from (2, 2) to (w+1, h+1)
     ! ---------------------------------------------------------------------
 
-    do i = 2, height + 1
-        do j = 2, width + 1
+        do i = 2, height + 1
+            do j = 2, width + 1
 
-            ! Count number of live neighbors at cell (i, j)
-            num_live_neighbors = sum(aug_cells(i - 1:i + 1, j - 1:j + 1))
+                ! Count number of live neighbors at cell (i, j)
+                num_live_neighbors = sum(aug_cells(i - 1:i + 1, j - 1:j + 1))
 
-            if (aug_cells(i, j) .ne. 0) then
-                num_live_neighbors = num_live_neighbors - 1
-            end if
+                if (aug_cells(i, j) .ne. 0) then
+                    num_live_neighbors = num_live_neighbors - 1
+                end if
 
+                ! Perform GoF simulation, update the buffer
+                select case (num_live_neighbors)
+                    case (3)
+                        recv_cells(i - 1, j - 1) = 1
+                    case (2)
+                        ! Do nothing
+                    case default
+                        recv_cells(i - 1, j - 1) = 0
+                end select
 
-            ! Perform GoF simulation, update the buffer
-            select case (num_live_neighbors)
-                case (3)
-                    recv_cells(i - 1, j - 1) = 1
-                case (2)
-                    ! Do nothing
-                case default
-                    recv_cells(i - 1, j - 1) = 0
-            end select
-
-            ! recv_cells(i-1, j-1) = num_live_neighbors
-
+            end do
         end do
-    end do
 
-    if (my_rank .eq. root_rank) then
-        ! Print the board
-        print *, 'After GoF:'
-        do i = 1, height
-            do j = 1, width
-                write(*, '(I3)', advance='no') recv_cells(i, j)
+        if (my_rank .eq. root_rank) then
+            ! Print the board
+            print *, 'After GoF:'
+            do i = 1, height
+                do j = 1, width
+                    write(*, '(I3)', advance='no') recv_cells(i, j)
+                end do
+                print *, ''
             end do
             print *, ''
-        end do
-        print *, ''
-    end if
+        end if
+
+    end do
 
     ! ---------------------------------------------------------------------
     ! Code: Collect & Gather the information
@@ -281,7 +258,7 @@ program main
                     root_rank, MPI_COMM_WORLD, ierr)
 
     if (my_rank .eq. 0) then
-        print *, 'Final board:'
+        print *, '----- Final board ------'
         do i = 1, global_height
             do j = 1, global_width
                 write(*, '(I3)', advance='no') global_cells(i, j)
