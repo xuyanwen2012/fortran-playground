@@ -307,14 +307,14 @@ program main
         call MPI_ISEND(loc_upper_left, 1, MPI_INTEGER, upper_left_procs, & 
                        itag, MPI_COMM_WORLD, irequest, ierr)
 
-        call MPI_ISEND(loc_upper_right, 1, MPI_INTEGER, upper_right_procs, &
-                       itag, MPI_COMM_WORLD, irequest, ierr)
+        ! call MPI_ISEND(loc_upper_right, 1, MPI_INTEGER, upper_right_procs, &
+        !                itag, MPI_COMM_WORLD, irequest, ierr)
         
-        call MPI_ISEND(loc_lower_left, 1, MPI_INTEGER, lower_left_procs, & 
-                       itag, MPI_COMM_WORLD, irequest, ierr)
+        ! call MPI_ISEND(loc_lower_left, 1, MPI_INTEGER, lower_left_procs, & 
+        !                itag, MPI_COMM_WORLD, irequest, ierr)
 
-        call MPI_ISEND(loc_lower_right, 1, MPI_INTEGER, lower_right_procs, &
-                       itag, MPI_COMM_WORLD, irequest, ierr)
+        ! call MPI_ISEND(loc_lower_right, 1, MPI_INTEGER, lower_right_procs, &
+        !                itag, MPI_COMM_WORLD, irequest, ierr)
 
         ! Recieving the four sides
         call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, &
@@ -333,14 +333,14 @@ program main
         call MPI_RECV(rev_upper_left, 1, MPI_INTEGER, upper_left_procs, &
                       itag, MPI_COMM_WORLD, istat, ierr)
         
-        call MPI_RECV(rev_upper_right, 1, MPI_INTEGER, upper_right_procs, & 
-                      itag, MPI_COMM_WORLD, istat, ierr)
+        ! call MPI_RECV(rev_upper_right, 1, MPI_INTEGER, upper_right_procs, & 
+        !               itag, MPI_COMM_WORLD, istat, ierr)
 
-        call MPI_RECV(rev_lower_left, 1, MPI_INTEGER, lower_left_procs, &
-                      itag, MPI_COMM_WORLD, istat, ierr)
+        ! call MPI_RECV(rev_lower_left, 1, MPI_INTEGER, lower_left_procs, &
+        !               itag, MPI_COMM_WORLD, istat, ierr)
         
-        call MPI_RECV(rev_lower_right, 1, MPI_INTEGER, lower_right_procs, & 
-                      itag, MPI_COMM_WORLD, istat, ierr)
+        ! call MPI_RECV(rev_lower_right, 1, MPI_INTEGER, lower_right_procs, & 
+        !               itag, MPI_COMM_WORLD, istat, ierr)
 
     !     ! ---------------------------------------------------------------------
     !     ! Prepare the augmented cells
