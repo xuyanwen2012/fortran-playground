@@ -35,15 +35,6 @@ program main
             integer, intent(in) :: width
             integer :: rounded_ij(2), i, j
         end function
-
-        pure function get_neighbor_tile(rank, dir, width) result(new_rank)
-            implicit none
-            integer, intent(in) :: rank
-            integer, intent(in) :: dir(2)
-            integer, intent(in) :: width
-            integer :: ij(2), i, j
-            integer :: new_rank
-        end function
     end interface
 
     ! ---------------------------------------------------------------------
@@ -274,7 +265,7 @@ program main
     ! MPI Communication: send edges to other procs as ghost cells
     ! ---------------------------------------------------------------------
 
-    ! do k = 1, 4
+    do k = 1, 4
 
         ! **** This is a fake [recv_cells], because I gave up using Scatter
         recv_cells = 0
@@ -306,19 +297,6 @@ program main
 
         call MPI_SEND(loc_lower, width, MPI_INTEGER, lower_procs, &
                        itag, MPI_COMM_WORLD, ierr)
-
-        ! call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, & 
-        !                itag, MPI_COMM_WORLD, irequest, ierr)
-
-        ! call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, &
-        !                itag, MPI_COMM_WORLD, irequest, ierr)
-        
-        ! call MPI_ISEND(loc_upper, width, MPI_INTEGER, upper_procs, & 
-        !                itag, MPI_COMM_WORLD, irequest, ierr)
-
-        ! call MPI_ISEND(loc_lower, width, MPI_INTEGER, lower_procs, &
-        !                itag, MPI_COMM_WORLD, irequest, ierr)
-
 
         ! The four corners, which is only one integer
         call MPI_SEND(loc_upper_left, 1, MPI_INTEGER, upper_left_procs, & 
@@ -411,39 +389,39 @@ program main
         aug_cells(height + 2, 1        ) = rev_lower_left
         aug_cells(height + 2, width + 2) = rev_lower_right
 
-    ! ! ---------------------------------------------------------------------
-    ! ! Do Game-of-Life Simulation logics
-    ! !
-    ! ! Note: work only on the area from (2, 2) to (w+1, h+1)
-    ! ! ---------------------------------------------------------------------
+    ! ---------------------------------------------------------------------
+    ! Do Game-of-Life Simulation logics
+    !
+    ! Note: work only on the area from (2, 2) to (w+1, h+1)
+    ! ---------------------------------------------------------------------
 
-    !     ! Perform one step simulation 
-    !     do i = 2, height + 1
-    !         do j = 2, width + 1
+        ! Perform one step simulation 
+        do i = 2, height + 1
+            do j = 2, width + 1
 
-    !             ! Count number of live neighbors at cell (i, j)
-    !             num_live_neighbors = sum(aug_cells(i - 1:i + 1, j - 1:j + 1))
+                ! Count number of live neighbors at cell (i, j)
+                num_live_neighbors = sum(aug_cells(i - 1:i + 1, j - 1:j + 1))
 
-    !             if (aug_cells(i, j) .ne. 0) then
-    !                 num_live_neighbors = num_live_neighbors - 1
-    !             end if
+                if (aug_cells(i, j) .ne. 0) then
+                    num_live_neighbors = num_live_neighbors - 1
+                end if
 
-    !             ! Perform GoF simulation, update the buffer
-    !             select case (num_live_neighbors)
-    !                 case (3)
-    !                     recv_cells(i - 1, j - 1) = 1
-    !                 case (2)
-    !                     ! Do nothing
-    !                 case default
-    !                     recv_cells(i - 1, j - 1) = 0
-    !             end select
+                ! Perform GoF simulation, update the buffer
+                select case (num_live_neighbors)
+                    case (3)
+                        recv_cells(i - 1, j - 1) = 1
+                    case (2)
+                        ! Do nothing
+                    case default
+                        recv_cells(i - 1, j - 1) = 0
+                end select
 
-    !         end do
-    !     end do
+            end do
+        end do
 
-    !     ! Do I/O print here
+        ! Do I/O print here
 
-    ! end do
+    end do
 
     ! ! ---------------------------------------------------------------------
     ! ! Code: Collect & Gather the information
@@ -553,7 +531,13 @@ pure function tile_ij2n(ij, width) result(n)
 end function
 
 pure function tile_round_ij(ij, width) result(rounded_ij)
-    
+    ! Using modulo to round the [ij] into the correct [ij]
+    ! 
+    ! Example:
+    ! 
+    ! * tile_round_ij([-1, 0], 2) = [1, 0] 
+    ! * tile_round_ij([2, 0], 2) = [0, 0]    
+    ! 
     implicit none
 
     integer, intent(in) :: ij(2)
@@ -564,22 +548,5 @@ pure function tile_round_ij(ij, width) result(rounded_ij)
     j = modulo(ij(2) , width)
 
     rounded_ij = [i, j]
-
-end function
-
-pure function get_neighbor_tile(rank, dir, width) result(new_rank)
-
-    implicit none
-
-    integer, intent(in) :: rank
-    integer, intent(in) :: dir(2)
-    integer, intent(in) :: width
-    integer :: ij(2)
-    integer :: i, j
-    integer :: new_rank
-
-    ! ij = tile_n2ij(rank, width)
-    ! ij = tile_round_ij(ij + dir, width)
-    ! new_rank = tile_ij2n(ij, width)
 
 end function
