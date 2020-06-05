@@ -95,14 +95,14 @@ program main
     integer, dimension(:), allocatable :: rev_left, rev_right
     integer, dimension(:), allocatable :: rev_upper, rev_lower
 
-    integer, dimension(1) :: rev_upper_left, rev_upper_right
-    integer, dimension(1) :: rev_lower_left, rev_lower_right
+    integer :: rev_upper_left, rev_upper_right
+    integer :: rev_lower_left, rev_lower_right
 
     integer, dimension(:), allocatable :: loc_left, loc_right
     integer, dimension(:), allocatable :: loc_upper, loc_lower
 
-    integer, dimension(1) :: loc_upper_left, loc_upper_right
-    integer, dimension(1) :: loc_lower_left, loc_lower_right
+    integer :: loc_upper_left, loc_upper_right
+    integer :: loc_lower_left, loc_lower_right
 
     ! For MPI use only: the process id of the neighbors
     integer :: left_procs, right_procs
@@ -243,7 +243,6 @@ program main
     ! Allocate memory for all the dynamic arrays
     ! ---------------------------------------------------------------------
 
-    ! allocate (recv_buffer(width * height))
     allocate (rev_left(height))
     allocate (rev_right(height))
     allocate (rev_upper(width))
@@ -253,16 +252,6 @@ program main
     allocate (loc_right(height))
     allocate (loc_upper(width))
     allocate (loc_lower(width))
-
-    ! allocate (rev_upper_left (1))
-    ! allocate (rev_upper_right(1))
-    ! allocate (rev_lower_left (1))
-    ! allocate (rev_lower_right(1))
-
-    ! allocate (loc_upper_left (1))
-    ! allocate (loc_upper_right(1))
-    ! allocate (loc_lower_left (1))
-    ! allocate (loc_lower_right(1))
 
     allocate (recv_cells(height, width))
     allocate (aug_cells(height + 2, width + 2))
@@ -417,10 +406,10 @@ program main
         !  0  1  5  9 13  0
 
         ! Copy the four corners
-        aug_cells(1,          1        ) = rev_upper_left(1)
-        aug_cells(1,          width + 2) = rev_upper_right(1)
-        aug_cells(height + 2, 1        ) = rev_lower_left(1)
-        aug_cells(height + 2, width + 2) = rev_lower_right(1)
+        aug_cells(1,          1        ) = rev_upper_left
+        aug_cells(1,          width + 2) = rev_upper_right
+        aug_cells(height + 2, 1        ) = rev_lower_left
+        aug_cells(height + 2, width + 2) = rev_lower_right
 
     ! ! ---------------------------------------------------------------------
     ! ! Do Game-of-Life Simulation logics
