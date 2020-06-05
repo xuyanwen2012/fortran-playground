@@ -95,8 +95,8 @@ program main
     integer, dimension(:), allocatable :: rev_left, rev_right
     integer, dimension(:), allocatable :: rev_upper, rev_lower
 
-    integer :: rev_upper_left, rev_upper_right
-    integer :: rev_lower_left, rev_lower_right
+    integer, dimension(1) :: rev_upper_left, rev_upper_right
+    integer, dimension(1) :: rev_lower_left, rev_lower_right
 
     integer, dimension(:), allocatable :: loc_left, loc_right
     integer, dimension(:), allocatable :: loc_upper, loc_lower
@@ -198,16 +198,16 @@ program main
         tile_n2ij(my_rank, num_procs_per_row) + [1, 1], &
         num_procs_per_row), num_procs_per_row)
 
-    ! if (my_rank .eq. root_rank) then
-    !     print *, "upper_procs: ", upper_procs
-    !     print *, "lower_procs: ", lower_procs
-    !     print *, "left_procs : ", left_procs
-    !     print *, "right_procs: ", right_procs
-    !     print *, "upper_left_procs : ", upper_left_procs
-    !     print *, "upper_right_procs: ", upper_right_procs
-    !     print *, "lower_left_procs : ", lower_left_procs
-    !     print *, "lower_right_procs: ", lower_right_procs
-    ! endif
+    if (my_rank .eq. root_rank) then
+        print *, "upper_procs: ", upper_procs
+        print *, "lower_procs: ", lower_procs
+        print *, "left_procs : ", left_procs
+        print *, "right_procs: ", right_procs
+        print *, "upper_left_procs : ", upper_left_procs
+        print *, "upper_right_procs: ", upper_right_procs
+        print *, "lower_left_procs : ", lower_left_procs
+        print *, "lower_right_procs: ", lower_right_procs
+    endif
 
     ! ---------------------------------------------------------------------
     ! Initialize Global World  
@@ -248,6 +248,21 @@ program main
     allocate (rev_right(height))
     allocate (rev_upper(width))
     allocate (rev_lower(width))
+
+    allocate (loc_left(height))
+    allocate (loc_right(height))
+    allocate (loc_upper(width))
+    allocate (loc_lower(width))
+
+    ! allocate (rev_upper_left (1))
+    ! allocate (rev_upper_right(1))
+    ! allocate (rev_lower_left (1))
+    ! allocate (rev_lower_right(1))
+
+    ! allocate (loc_upper_left (1))
+    ! allocate (loc_upper_right(1))
+    ! allocate (loc_lower_left (1))
+    ! allocate (loc_lower_right(1))
 
     allocate (recv_cells(height, width))
     allocate (aug_cells(height + 2, width + 2))
@@ -291,30 +306,43 @@ program main
         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
         ! The four sides, which has either width or height integers
-        call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, & 
-                       itag, MPI_COMM_WORLD, irequest, ierr)
+        call MPI_SEND(loc_left, height, MPI_INTEGER, left_procs, & 
+                       itag, MPI_COMM_WORLD, ierr)
 
-        call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, &
-                       itag, MPI_COMM_WORLD, irequest, ierr)
+        call MPI_SEND(loc_right, height, MPI_INTEGER, right_procs, &
+                       itag, MPI_COMM_WORLD, ierr)
         
-        call MPI_ISEND(loc_upper, width, MPI_INTEGER, upper_procs, & 
-                       itag, MPI_COMM_WORLD, irequest, ierr)
+        call MPI_SEND(loc_upper, width, MPI_INTEGER, upper_procs, & 
+                       itag, MPI_COMM_WORLD, ierr)
 
-        call MPI_ISEND(loc_lower, width, MPI_INTEGER, lower_procs, &
-                       itag, MPI_COMM_WORLD, irequest, ierr)
+        call MPI_SEND(loc_lower, width, MPI_INTEGER, lower_procs, &
+                       itag, MPI_COMM_WORLD, ierr)
+
+        ! call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, & 
+        !                itag, MPI_COMM_WORLD, irequest, ierr)
+
+        ! call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, &
+        !                itag, MPI_COMM_WORLD, irequest, ierr)
+        
+        ! call MPI_ISEND(loc_upper, width, MPI_INTEGER, upper_procs, & 
+        !                itag, MPI_COMM_WORLD, irequest, ierr)
+
+        ! call MPI_ISEND(loc_lower, width, MPI_INTEGER, lower_procs, &
+        !                itag, MPI_COMM_WORLD, irequest, ierr)
+
 
         ! The four corners, which is only one integer
-        call MPI_ISEND(loc_upper_left, 1, MPI_INTEGER, upper_left_procs, & 
-                       itag, MPI_COMM_WORLD, irequest, ierr)
+        call MPI_SEND(loc_upper_left, 1, MPI_INTEGER, upper_left_procs, & 
+                       itag, MPI_COMM_WORLD, ierr)
 
-        ! call MPI_ISEND(loc_upper_right, 1, MPI_INTEGER, upper_right_procs, &
-        !                itag, MPI_COMM_WORLD, irequest, ierr)
+        call MPI_SEND(loc_upper_right, 1, MPI_INTEGER, upper_right_procs, &
+                       itag, MPI_COMM_WORLD, ierr)
         
-        ! call MPI_ISEND(loc_lower_left, 1, MPI_INTEGER, lower_left_procs, & 
-        !                itag, MPI_COMM_WORLD, irequest, ierr)
+        call MPI_SEND(loc_lower_left, 1, MPI_INTEGER, lower_left_procs, & 
+                       itag, MPI_COMM_WORLD, ierr)
 
-        ! call MPI_ISEND(loc_lower_right, 1, MPI_INTEGER, lower_right_procs, &
-        !                itag, MPI_COMM_WORLD, irequest, ierr)
+        call MPI_SEND(loc_lower_right, 1, MPI_INTEGER, lower_right_procs, &
+                       itag, MPI_COMM_WORLD, ierr)
 
         ! Recieving the four sides
         call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, &
@@ -333,14 +361,15 @@ program main
         call MPI_RECV(rev_upper_left, 1, MPI_INTEGER, upper_left_procs, &
                       itag, MPI_COMM_WORLD, istat, ierr)
         
-        ! call MPI_RECV(rev_upper_right, 1, MPI_INTEGER, upper_right_procs, & 
-        !               itag, MPI_COMM_WORLD, istat, ierr)
+        call MPI_RECV(rev_upper_right, 1, MPI_INTEGER, upper_right_procs, & 
+                      itag, MPI_COMM_WORLD, istat, ierr)
 
-        ! call MPI_RECV(rev_lower_left, 1, MPI_INTEGER, lower_left_procs, &
-        !               itag, MPI_COMM_WORLD, istat, ierr)
+        call MPI_RECV(rev_lower_left, 1, MPI_INTEGER, lower_left_procs, &
+                      itag, MPI_COMM_WORLD, istat, ierr)
         
-        ! call MPI_RECV(rev_lower_right, 1, MPI_INTEGER, lower_right_procs, & 
-        !               itag, MPI_COMM_WORLD, istat, ierr)
+        call MPI_RECV(rev_lower_right, 1, MPI_INTEGER, lower_right_procs, & 
+                      itag, MPI_COMM_WORLD, istat, ierr)
+
 
     !     ! ---------------------------------------------------------------------
     !     ! Prepare the augmented cells
@@ -450,6 +479,11 @@ program main
     deallocate (rev_right)
     deallocate (rev_upper)
     deallocate (rev_lower)
+
+    deallocate (loc_left)
+    deallocate (loc_right)
+    deallocate (loc_upper)
+    deallocate (loc_lower)
 
     ! deallocate (recv_buffer) 
     deallocate (recv_cells) 
