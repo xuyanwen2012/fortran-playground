@@ -371,50 +371,56 @@ program main
                       itag, MPI_COMM_WORLD, istat, ierr)
 
 
-    !     ! ---------------------------------------------------------------------
-    !     ! Prepare the augmented cells
-    !     ! ---------------------------------------------------------------------
+        ! ---------------------------------------------------------------------
+        ! Prepare the augmented cells
+        ! ---------------------------------------------------------------------
 
-    !     ! Copy [A] to [D]
-    !     aug_cells(2 : height + 1, 2 : width + 1) = recv_cells
+        ! Copy [A] to [D]
+        aug_cells(2 : height + 1, 2 : width + 1) = recv_cells
 
-    !     ! At this point, we should have all we need per thread
-    !     ! Example: [D] should look like this (6x6)
-    !     ! 
-    !     !  0  0  0  0  0  0
-    !     !  0  1  5  9 13  0
-    !     !  0  2  6 10 14  0
-    !     !  0  3  7 11 15  0
-    !     !  0  4  8 12 16  0
-    !     !  0  0  0  0  0  0
+        ! At this point, we should have all we need per thread
+        ! Example: [D] should look like this (6x6)
+        ! 
+        !  0  0  0  0  0  0
+        !  0  1  5  9 13  0
+        !  0  2  6 10 14  0
+        !  0  3  7 11 15  0
+        !  0  4  8 12 16  0
+        !  0  0  0  0  0  0
 
-    !     ! Copy [B], [C] to [D]
-    !     aug_cells(2 : height + 1, 1) = rev_left
-    !     aug_cells(2 : height + 1, width + 2) = rev_right
+        ! Copy [B], [C] to [D]
+        aug_cells(2 : height + 1, 1        ) = rev_left
+        aug_cells(2 : height + 1, width + 2) = rev_right
 
-    !     ! At this point, we should have all we need per thread
-    !     ! Example: [D] should look like this (6x6)
-    !     ! 
-    !     !  0  0  0  0  0  0
-    !     ! 21  1  5  9 13 31
-    !     ! 22  2  6 10 14 32
-    !     ! 23  3  7 11 15 33
-    !     ! 24  4  8 12 16 34
-    !     !  0  0  0  0  0  0
+        ! At this point, we should have all we need per thread
+        ! Example: [D] should look like this (6x6)
+        ! 
+        !  0  0  0  0  0  0
+        ! 21  1  5  9 13 31
+        ! 22  2  6 10 14 32
+        ! 23  3  7 11 15 33
+        ! 24  4  8 12 16 34
+        !  0  0  0  0  0  0
 
-    !     ! Copy [d]'s top and lower row
-    !     aug_cells(1, :) = aug_cells(height + 1, :)
-    !     aug_cells(height + 2, :) = aug_cells(2, :)
+        ! Copy [E], [F] to [D]
+        aug_cells(1,          2 : width + 1) = rev_upper
+        aug_cells(height + 2, 2 : width + 1) = rev_lower
 
-    !     ! At this point, we should have all we need per thread
-    !     ! Example: [D] should look like this (6x6)
-    !     ! 
-    !     ! 24  4  8 12 16 34
-    !     ! 21  1  5  9 13 31
-    !     ! 22  2  6 10 14 32
-    !     ! 23  3  7 11 15 33
-    !     ! 24  4  8 12 16 34
-    !     ! 21  1  5  9 13 31
+        ! At this point, we should have all we need per thread
+        ! Example: [D] should look like this (6x6)
+        ! 
+        !  0  4  8 12 16  0
+        ! 21  1  5  9 13 31
+        ! 22  2  6 10 14 32
+        ! 23  3  7 11 15 33
+        ! 24  4  8 12 16 34
+        !  0  1  5  9 13  0
+
+        ! Copy the four corners
+        aug_cells(1,          1        ) = rev_upper_left(1)
+        aug_cells(1,          width + 2) = rev_upper_right(1)
+        aug_cells(height + 2, 1        ) = rev_lower_left(1)
+        aug_cells(height + 2, width + 2) = rev_lower_right(1)
 
     ! ! ---------------------------------------------------------------------
     ! ! Do Game-of-Life Simulation logics
