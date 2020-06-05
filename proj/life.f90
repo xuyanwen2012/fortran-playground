@@ -78,36 +78,6 @@ program main
     right_procs = modulo(my_rank + 1, num_procs)
 
     ! ---------------------------------------------------------------------
-    ! Initialize Global World  
-    ! Example: [A] should look like this (4x4)
-    !
-    ! 1  5  9 13
-    ! 2  6 10 14
-    ! 3  7 11 15
-    ! 4  8 12 16
-    ! ---------------------------------------------------------------------
-
-    ! global_cells = reshape((/ (i, i = 1,  global_height * global_width) /), (/global_height, global_width/))
-    ! global_cells(2, 1:3) = 1
-    global_cells = 0
-    global_cells(2, 1) = 1
-    global_cells(3, 2) = 1
-    global_cells(3, 3) = 1
-    global_cells(1, 3) = 1
-    global_cells(2, 3) = 1
-
-    if (my_rank .eq. 0) then
-        print *, '----- Initial board ------'
-        do i = 1, global_height
-            do j = 1, global_width
-                write(*, '(I3)', advance='no') global_cells(i, j)
-            end do
-            print *, ''
-        end do
-        print *, ''
-    end if
-
-    ! ---------------------------------------------------------------------
     ! Allocate memory for all the dynamic arrays
     ! ---------------------------------------------------------------------
 
@@ -123,13 +93,47 @@ program main
     allocate (recv_cells(height, width))
     allocate (aug_cells(height + 2, width + 2))
 
+    ! ----------------------------------------------------------------
+    ! Initialize Global World (only initialized in root rank)
+    ! Example: [A] should look like this (4x4)
+    !
+    ! 1  5  9 13
+    ! 2  6 10 14
+    ! 3  7 11 15
+    ! 4  8 12 16
+    ! ---------------------------------------------------------------
+    
+    if (my_rank .eq. root_rank) then
+
+        ! global_cells = reshape((/ (i, i = 1,  global_height * global_width) /), (/global_height, global_width/))
+        ! global_cells(2, 1:3) = 1
+        global_cells = 0
+        global_cells(2, 1) = 1
+        global_cells(3, 2) = 1
+        global_cells(3, 3) = 1
+        global_cells(1, 3) = 1
+        global_cells(2, 3) = 1
+
+        if (my_rank .eq. root_rank) then
+            print *, '----- Initial board ------'
+            do i = 1, global_height
+                do j = 1, global_width
+                    write(*, '(I3)', advance='no') global_cells(i, j)
+                end do
+                print *, ''
+            end do
+            print *, ''
+        end if
+
+    end if
+
     ! ---------------------------------------------------------------------
     ! Scatter and distribute the board to processes
     ! ---------------------------------------------------------------------
 
     num_cell_per_task = (global_height * global_width) / num_procs
-    ! or maybe just width * height
 
+    ! Then distribute the cells to other thread
     call MPI_SCATTER(global_cells, num_cell_per_task, MPI_INTEGER, &
                      recv_buffer, num_cell_per_task, MPI_INTEGER, &
                      root_rank, MPI_COMM_WORLD, ierr)
@@ -148,6 +152,7 @@ program main
 
         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
+        ! Send and receive ghost cells
         call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, & 
                        itag, MPI_COMM_WORLD, irequest, ierr)
 
@@ -249,7 +254,7 @@ program main
                     global_cells, num_cell_per_task, MPI_INTEGER, &
                     root_rank, MPI_COMM_WORLD, ierr)
 
-    if (my_rank .eq. 0) then
+    if (my_rank .eq. root_rank) then
         print *, '----- Final board ------'
         do i = 1, global_height
             do j = 1, global_width

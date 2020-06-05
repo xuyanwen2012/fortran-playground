@@ -201,6 +201,23 @@ program main
     endif
 
     ! ---------------------------------------------------------------------
+    ! Allocate memory for all the dynamic arrays
+    ! ---------------------------------------------------------------------
+
+    allocate (rev_left(height))
+    allocate (rev_right(height))
+    allocate (rev_upper(width))
+    allocate (rev_lower(width))
+
+    allocate (loc_left(height))
+    allocate (loc_right(height))
+    allocate (loc_upper(width))
+    allocate (loc_lower(width))
+
+    allocate (recv_cells(height, width))
+    allocate (aug_cells(height + 2, width + 2))
+
+    ! ---------------------------------------------------------------------
     ! Initialize Global World  
     ! Example: [A] should look like this (4x4)
     !
@@ -229,23 +246,6 @@ program main
         end do
         print *, ''
     end if
-
-    ! ---------------------------------------------------------------------
-    ! Allocate memory for all the dynamic arrays
-    ! ---------------------------------------------------------------------
-
-    allocate (rev_left(height))
-    allocate (rev_right(height))
-    allocate (rev_upper(width))
-    allocate (rev_lower(width))
-
-    allocate (loc_left(height))
-    allocate (loc_right(height))
-    allocate (loc_upper(width))
-    allocate (loc_lower(width))
-
-    allocate (recv_cells(height, width))
-    allocate (aug_cells(height + 2, width + 2))
 
     ! ! ---------------------------------------------------------------------
     ! ! Scatter and distribute the board to processes
