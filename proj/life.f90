@@ -17,7 +17,7 @@ program main
 
     integer, parameter :: root_rank = 0
     integer :: ierr, my_rank, num_procs
-    integer :: itag, irequest
+    integer :: itag, itag_2, irequest
     integer :: istat(MPI_STATUS_SIZE)
 
     ! ---------------------------------------------------------------------
@@ -72,6 +72,9 @@ program main
     call MPI_INIT(ierr)
     call MPI_COMM_RANK(MPI_COMM_WORLD, my_rank, ierr)
     call MPI_COMM_SIZE(MPI_COMM_WORLD, num_procs, ierr)
+
+    itag = 1111
+    itag_2 = 2222
 
     ! MPI related: Compute the neighbor ranks
     left_procs = modulo(my_rank - 1, num_procs)
@@ -153,17 +156,25 @@ program main
         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
         ! Send and receive ghost cells
-        call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, & 
-                       itag, MPI_COMM_WORLD, irequest, ierr)
+        ! call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, & 
+        !                itag, MPI_COMM_WORLD, irequest, ierr)
 
-        call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, &
-                       itag, MPI_COMM_WORLD, irequest, ierr)
+        ! call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, &
+        !                itag, MPI_COMM_WORLD, irequest, ierr)
         
-        call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, &
-                      itag, MPI_COMM_WORLD, istat, ierr)
+        ! call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, &
+        !               itag, MPI_COMM_WORLD, istat, ierr)
         
-        call MPI_RECV(rev_right, height, MPI_INTEGER, right_procs, & 
-                      itag, MPI_COMM_WORLD, istat, ierr)
+        ! call MPI_RECV(rev_right, height, MPI_INTEGER, right_procs, & 
+        !               itag, MPI_COMM_WORLD, istat, ierr)
+
+        call MPI_SENDRECV(loc_left, height, MPI_INTEGER, left_procs, itag, &
+                          rev_right, height, MPI_INTEGER, right_procs, itag, & 
+                          MPI_COMM_WORLD, istat, ierr)
+
+        call MPI_SENDRECV(loc_right, height, MPI_INTEGER, right_procs, itag, &
+                          rev_left, height, MPI_INTEGER, left_procs, itag, &
+                          MPI_COMM_WORLD, istat, ierr)
 
         ! ---------------------------------------------------------------------
         ! Prepare the augmented cells

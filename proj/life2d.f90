@@ -115,10 +115,10 @@ program main
     call MPI_COMM_SIZE(MPI_COMM_WORLD, num_procs, ierr)
 
     ! Temporary check, subject to remove
-    if (num_procs .lt. 4) then
-        print *, ("Need at least 4 processors to divide in 2D!")
-        call exit(0)
-    end if
+    ! if (num_procs .lt. 4) then
+    !     print *, ("Need at least 4 processors to divide in 2D!")
+    !     call exit(0)
+    ! end if
 
     if (modulo(global_width, num_procs) .ne. 0) then
         print *, ("width of the world can not divid by number of processors!")
@@ -286,30 +286,30 @@ program main
         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
         ! The four sides, which has either width or height integers
-        call MPI_SEND(loc_left, height, MPI_INTEGER, left_procs, & 
-                       itag, MPI_COMM_WORLD, ierr)
+        call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, & 
+                       itag, MPI_COMM_WORLD, irequest, ierr)
 
-        call MPI_SEND(loc_right, height, MPI_INTEGER, right_procs, &
-                       itag, MPI_COMM_WORLD, ierr)
+        call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, &
+                       itag, MPI_COMM_WORLD, irequest, ierr)
         
-        call MPI_SEND(loc_upper, width, MPI_INTEGER, upper_procs, & 
-                       itag, MPI_COMM_WORLD, ierr)
+        call MPI_ISEND(loc_upper, width, MPI_INTEGER, upper_procs, & 
+                       itag, MPI_COMM_WORLD, irequest, ierr)
 
-        call MPI_SEND(loc_lower, width, MPI_INTEGER, lower_procs, &
-                       itag, MPI_COMM_WORLD, ierr)
+        call MPI_ISEND(loc_lower, width, MPI_INTEGER, lower_procs, &
+                       itag, MPI_COMM_WORLD, irequest, ierr)
 
         ! The four corners, which is only one integer
-        call MPI_SEND(loc_upper_left, 1, MPI_INTEGER, upper_left_procs, & 
-                       itag, MPI_COMM_WORLD, ierr)
+        call MPI_ISEND(loc_upper_left, 1, MPI_INTEGER, upper_left_procs, & 
+                       itag, MPI_COMM_WORLD, irequest, ierr)
 
-        call MPI_SEND(loc_upper_right, 1, MPI_INTEGER, upper_right_procs, &
-                       itag, MPI_COMM_WORLD, ierr)
+        call MPI_ISEND(loc_upper_right, 1, MPI_INTEGER, upper_right_procs, &
+                       itag, MPI_COMM_WORLD, irequest, ierr)
         
-        call MPI_SEND(loc_lower_left, 1, MPI_INTEGER, lower_left_procs, & 
-                       itag, MPI_COMM_WORLD, ierr)
+        call MPI_ISEND(loc_lower_left, 1, MPI_INTEGER, lower_left_procs, & 
+                       itag, MPI_COMM_WORLD, irequest, ierr)
 
-        call MPI_SEND(loc_lower_right, 1, MPI_INTEGER, lower_right_procs, &
-                       itag, MPI_COMM_WORLD, ierr)
+        call MPI_ISEND(loc_lower_right, 1, MPI_INTEGER, lower_right_procs, &
+                       itag, MPI_COMM_WORLD, irequest, ierr)
 
         ! Recieving the four sides
         call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, &
@@ -325,6 +325,7 @@ program main
                       itag, MPI_COMM_WORLD, istat, ierr)
 
         ! Recieving the four corners
+
         call MPI_RECV(rev_upper_left, 1, MPI_INTEGER, upper_left_procs, &
                       itag, MPI_COMM_WORLD, istat, ierr)
         
