@@ -83,7 +83,7 @@ program main
     ! than the [recv_cells]. But when we do the simulation, we should only 
     ! work on the area from (2, 2) to (w+1, h+1)
     ! integer, dimension(:), allocatable :: recv_buffer
-    ! integer, dimension(:, :), allocatable :: recv_cells
+    integer, dimension(:, :), allocatable :: recv_cells
 
     integer, dimension(:, :), allocatable :: aug_cells
 
@@ -95,8 +95,14 @@ program main
     integer, dimension(:), allocatable :: rev_left, rev_right
     integer, dimension(:), allocatable :: rev_upper, rev_lower
 
+    integer :: rev_upper_left, rev_upper_right
+    integer :: rev_lower_left, rev_lower_right
+
     integer, dimension(:), allocatable :: loc_left, loc_right
     integer, dimension(:), allocatable :: loc_upper, loc_lower
+
+    integer, dimension(1) :: loc_upper_left, loc_upper_right
+    integer, dimension(1) :: loc_lower_left, loc_lower_right
 
     ! For MPI use only: the process id of the neighbors
     integer :: left_procs, right_procs
@@ -233,21 +239,18 @@ program main
         print *, ''
     end if
 
-    ! ! ---------------------------------------------------------------------
-    ! ! Allocate memory for all the dynamic arrays
-    ! ! ---------------------------------------------------------------------
-
-    ! ! Temporary check, subject to remove
-    ! if (modulo(global_width, num_procs) .ne. 0) then
-    !     print *, ("width of the world can not divid by number of processors!")
-    !     call exit(0)
-    ! end if
-
-    ! width = global_width / num_procs
+    ! ---------------------------------------------------------------------
+    ! Allocate memory for all the dynamic arrays
+    ! ---------------------------------------------------------------------
 
     ! allocate (recv_buffer(width * height))
-    ! allocate (recv_cells(height, width))
-    ! allocate (aug_cells(height + 2, width + 2))
+    allocate (rev_left(height))
+    allocate (rev_right(height))
+    allocate (rev_upper(width))
+    allocate (rev_lower(width))
+
+    allocate (recv_cells(height, width))
+    allocate (aug_cells(height + 2, width + 2))
 
     ! ! ---------------------------------------------------------------------
     ! ! Scatter and distribute the board to processes
@@ -263,28 +266,81 @@ program main
     ! ! Convert recieved 1D raw buffer into 2D local cells
     ! recv_cells = reshape(recv_buffer, (/height, width/))
 
-    ! ! ---------------------------------------------------------------------
-    ! ! MPI Communication: send edges to other procs as ghost cells
-    ! ! ---------------------------------------------------------------------
+    ! ---------------------------------------------------------------------
+    ! MPI Communication: send edges to other procs as ghost cells
+    ! ---------------------------------------------------------------------
 
     ! do k = 1, 4
 
-    !     loc_left = recv_cells(:, 1)
-    !     loc_right = recv_cells(:, width)
+        ! **** This is a fake [recv_cells], because I gave up using Scatter
+        recv_cells = 0
+        ! if (my_rank .eq. root_rank) then
+        !     recv_cells = 1
+        ! endif
 
-    !     call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+        loc_left = recv_cells(:, 1)
+        loc_right = recv_cells(:, width)
+        loc_upper = recv_cells(1, :)
+        loc_lower = recv_cells(width, :)
 
-    !     call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, & 
-    !                    itag, MPI_COMM_WORLD, irequest, ierr)
+        loc_upper_left = recv_cells(1, 1)
+        loc_upper_right = recv_cells(1, width)
+        loc_lower_left = recv_cells(height, 1)
+        loc_lower_right =  recv_cells(height, width)
 
-    !     call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, &
-    !                    itag, MPI_COMM_WORLD, irequest, ierr)
+        call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
+        ! The four sides, which has either width or height integers
+        call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, & 
+                       itag, MPI_COMM_WORLD, irequest, ierr)
+
+        call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, &
+                       itag, MPI_COMM_WORLD, irequest, ierr)
         
-    !     call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, &
-    !                   itag, MPI_COMM_WORLD, istat, ierr)
+        call MPI_ISEND(loc_upper, width, MPI_INTEGER, upper_procs, & 
+                       itag, MPI_COMM_WORLD, irequest, ierr)
+
+        call MPI_ISEND(loc_lower, width, MPI_INTEGER, lower_procs, &
+                       itag, MPI_COMM_WORLD, irequest, ierr)
+
+        ! The four corners, which is only one integer
+        call MPI_ISEND(loc_upper_left, 1, MPI_INTEGER, upper_left_procs, & 
+                       itag, MPI_COMM_WORLD, irequest, ierr)
+
+        call MPI_ISEND(loc_upper_right, 1, MPI_INTEGER, upper_right_procs, &
+                       itag, MPI_COMM_WORLD, irequest, ierr)
         
-    !     call MPI_RECV(rev_right, height, MPI_INTEGER, right_procs, & 
-    !                   itag, MPI_COMM_WORLD, istat, ierr)
+        call MPI_ISEND(loc_lower_left, 1, MPI_INTEGER, lower_left_procs, & 
+                       itag, MPI_COMM_WORLD, irequest, ierr)
+
+        call MPI_ISEND(loc_lower_right, 1, MPI_INTEGER, lower_right_procs, &
+                       itag, MPI_COMM_WORLD, irequest, ierr)
+
+        ! Recieving the four sides
+        call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, &
+                      itag, MPI_COMM_WORLD, istat, ierr)
+        
+        call MPI_RECV(rev_right, height, MPI_INTEGER, right_procs, & 
+                      itag, MPI_COMM_WORLD, istat, ierr)
+
+        call MPI_RECV(rev_upper, width, MPI_INTEGER, upper_procs, &
+                      itag, MPI_COMM_WORLD, istat, ierr)
+        
+        call MPI_RECV(rev_lower, width, MPI_INTEGER, lower_procs, & 
+                      itag, MPI_COMM_WORLD, istat, ierr)
+
+        ! Recieving the four corners
+        call MPI_RECV(rev_upper_left, 1, MPI_INTEGER, upper_left_procs, &
+                      itag, MPI_COMM_WORLD, istat, ierr)
+        
+        call MPI_RECV(rev_upper_right, 1, MPI_INTEGER, upper_right_procs, & 
+                      itag, MPI_COMM_WORLD, istat, ierr)
+
+        call MPI_RECV(rev_lower_left, 1, MPI_INTEGER, lower_left_procs, &
+                      itag, MPI_COMM_WORLD, istat, ierr)
+        
+        call MPI_RECV(rev_lower_right, 1, MPI_INTEGER, lower_right_procs, & 
+                      itag, MPI_COMM_WORLD, istat, ierr)
 
     !     ! ---------------------------------------------------------------------
     !     ! Prepare the augmented cells
@@ -386,13 +442,18 @@ program main
     !     print *, ''
     ! end if
 
-    ! ! ---------------------------------------------------------------------
-    ! ! Code: Finish MPI
-    ! ! ---------------------------------------------------------------------
+    ! ---------------------------------------------------------------------
+    ! Code: Finish MPI
+    ! ---------------------------------------------------------------------
+
+    deallocate (rev_left)
+    deallocate (rev_right)
+    deallocate (rev_upper)
+    deallocate (rev_lower)
 
     ! deallocate (recv_buffer) 
-    ! deallocate (recv_cells) 
-    ! deallocate (aug_cells) 
+    deallocate (recv_cells) 
+    deallocate (aug_cells) 
 
     call MPI_FINALIZE(ierr)
 
