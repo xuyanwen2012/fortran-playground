@@ -109,8 +109,6 @@ program main
 
     integer :: ij(2)
 
-    ! integer :: tiles_ij(2)
-
     ! ---------------------------------------------------------------------
     ! Code: Start MPI
     ! ---------------------------------------------------------------------
@@ -162,7 +160,6 @@ program main
     !  2 | 2 | 5 | 8 |
     !    +---+---+---+
     !
-
     upper_procs = tile_ij2n(tile_round_ij( & 
         tile_n2ij(my_rank, num_procs_per_row) + [0, -1], &
         num_procs_per_row), num_procs_per_row)
@@ -195,62 +192,46 @@ program main
         tile_n2ij(my_rank, num_procs_per_row) + [1, 1], &
         num_procs_per_row), num_procs_per_row)
 
+    ! if (my_rank .eq. root_rank) then
+    !     print *, "upper_procs: ", upper_procs
+    !     print *, "lower_procs: ", lower_procs
+    !     print *, "left_procs : ", left_procs
+    !     print *, "right_procs: ", right_procs
+    !     print *, "upper_left_procs : ", upper_left_procs
+    !     print *, "upper_right_procs: ", upper_right_procs
+    !     print *, "lower_left_procs : ", lower_left_procs
+    !     print *, "lower_right_procs: ", lower_right_procs
+    ! endif
 
-    if (my_rank .eq. root_rank) then
-        ! do i = 0, 8
-        !     print *,  tile_n2ij(i, 3)
-        ! enddo
+    ! ---------------------------------------------------------------------
+    ! Initialize Global World  
+    ! Example: [A] should look like this (4x4)
+    !
+    ! 1  5  9 13
+    ! 2  6 10 14
+    ! 3  7 11 15
+    ! 4  8 12 16
+    ! ---------------------------------------------------------------------
 
+    ! global_cells = reshape((/ (i, i = 1,  global_height * global_width) /), (/global_height, global_width/))
+    ! global_cells(2, 1:3) = 1
+    global_cells = 0
+    global_cells(2, 1) = 1
+    global_cells(3, 2) = 1
+    global_cells(3, 3) = 1
+    global_cells(1, 3) = 1
+    global_cells(2, 3) = 1
 
-        ! do i = 0, 2
-        !     do j = 0, 2
-        !         print *,  tile_ij2n([i, j], 3)
-        !     enddo
-        ! enddo
-
-        print *, "upper_procs: ", upper_procs
-        print *, "lower_procs: ", lower_procs
-        print *, "left_procs : ", left_procs
-        print *, "right_procs: ", right_procs
-        print *, "upper_left_procs : ", upper_left_procs
-        print *, "upper_right_procs: ", upper_right_procs
-        print *, "lower_left_procs : ", lower_left_procs
-        print *, "lower_right_procs: ", lower_right_procs
-    endif
-
-    ! left_procs = modulo(my_rank - 1, num_procs)
-    ! right_procs = modulo(my_rank + 1, num_procs)
-
-
-    ! ! ---------------------------------------------------------------------
-    ! ! Initialize Global World  
-    ! ! Example: [A] should look like this (4x4)
-    ! !
-    ! ! 1  5  9 13
-    ! ! 2  6 10 14
-    ! ! 3  7 11 15
-    ! ! 4  8 12 16
-    ! ! ---------------------------------------------------------------------
-
-    ! ! global_cells = reshape((/ (i, i = 1,  global_height * global_width) /), (/global_height, global_width/))
-    ! ! global_cells(2, 1:3) = 1
-    ! global_cells = 0
-    ! global_cells(2, 1) = 1
-    ! global_cells(3, 2) = 1
-    ! global_cells(3, 3) = 1
-    ! global_cells(1, 3) = 1
-    ! global_cells(2, 3) = 1
-
-    ! if (my_rank .eq. 0) then
-    !     print *, '----- Initial board ------'
-    !     do i = 1, global_height
-    !         do j = 1, global_width
-    !             write(*, '(I3)', advance='no') global_cells(i, j)
-    !         end do
-    !         print *, ''
-    !     end do
-    !     print *, ''
-    ! end if
+    if (my_rank .eq. 0) then
+        print *, '----- Initial board ------'
+        do i = 1, global_height
+            do j = 1, global_width
+                write(*, '(I3)', advance='no') global_cells(i, j)
+            end do
+            print *, ''
+        end do
+        print *, ''
+    end if
 
     ! ! ---------------------------------------------------------------------
     ! ! Allocate memory for all the dynamic arrays
