@@ -50,9 +50,6 @@ program main
     integer, dimension(:), allocatable :: recv_buffer
     integer, dimension(:, :), allocatable :: recv_cells
     integer, dimension(:, :), allocatable :: aug_cells
-    ! integer, dimension(height, width) :: recv_buffer
-    ! integer, dimension(height, width) :: recv_cells
-    ! integer, dimension(height + 2, width + 2) :: aug_cells
 
     ! [rev_left] and [rev_right] are strip (1*h), i.e. The local Ghost buffer
     ! which should be recieved from tge left, the right neighbor, respectively
@@ -98,7 +95,7 @@ program main
     global_cells(3, 3) = 1
     global_cells(1, 3) = 1
     global_cells(2, 3) = 1
-    
+
     if (my_rank .eq. 0) then
         print *, '----- Initial board ------'
         do i = 1, global_height
@@ -208,24 +205,13 @@ program main
         ! 24  4  8 12 16 34
         ! 21  1  5  9 13 31
 
-        ! if (my_rank .eq. root_rank) then
-        !     ! Print the board
-        !     print *, 'The augmented cells'
-        !     do i = 1, height + 2
-        !         do j = 1, width + 2
-        !             write(*, '(I3)', advance='no') aug_cells(i, j)
-        !         end do
-        !         print *, ''
-        !     end do
-        !     print *, ''
-        ! end if
-
     ! ---------------------------------------------------------------------
     ! Do Game-of-Life Simulation logics
     !
     ! Note: work only on the area from (2, 2) to (w+1, h+1)
     ! ---------------------------------------------------------------------
 
+        ! Perform one step simulation 
         do i = 2, height + 1
             do j = 2, width + 1
 
@@ -249,17 +235,7 @@ program main
             end do
         end do
 
-        ! if (my_rank .eq. root_rank) then
-        !     ! Print the board
-        !     print *, 'After GoF:'
-        !     do i = 1, height
-        !         do j = 1, width
-        !             write(*, '(I3)', advance='no') recv_cells(i, j)
-        !         end do
-        !         print *, ''
-        !     end do
-        !     print *, ''
-        ! end if
+        ! Do I/O print here
 
     end do
 
