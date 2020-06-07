@@ -114,11 +114,7 @@ program main
     call MPI_COMM_RANK(MPI_COMM_WORLD, my_rank, ierr)
     call MPI_COMM_SIZE(MPI_COMM_WORLD, num_procs, ierr)
 
-    ! Temporary check, subject to remove
-    ! if (num_procs .lt. 4) then
-    !     print *, ("Need at least 4 processors to divide in 2D!")
-    !     call exit(0)
-    ! end if
+    itag = 1111
 
     if (modulo(global_width, num_procs) .ne. 0) then
         print *, ("width of the world can not divid by number of processors!")

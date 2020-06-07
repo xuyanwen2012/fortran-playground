@@ -17,7 +17,7 @@ program main
 
     integer, parameter :: root_rank = 0
     integer :: ierr, my_rank, num_procs
-    integer :: itag, itag_2, irequest
+    integer :: itag, irequest
     integer :: istat(MPI_STATUS_SIZE)
 
     ! ---------------------------------------------------------------------
@@ -74,7 +74,6 @@ program main
     call MPI_COMM_SIZE(MPI_COMM_WORLD, num_procs, ierr)
 
     itag = 1111
-    itag_2 = 2222
 
     ! MPI related: Compute the neighbor ranks
     left_procs = modulo(my_rank - 1, num_procs)
