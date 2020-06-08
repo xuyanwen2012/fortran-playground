@@ -17,7 +17,7 @@ program main
 
     integer, parameter :: root_rank = 0
     integer :: ierr, my_rank, num_procs
-    integer :: itag, irequest
+    integer :: itag = 1111
     integer :: istat(MPI_STATUS_SIZE)
 
     ! ---------------------------------------------------------------------
@@ -25,8 +25,11 @@ program main
     ! ---------------------------------------------------------------------
     integer, parameter :: global_height = 5
     integer, parameter :: global_width = 20
+    integer, parameter :: max_step = 80
+
     integer, dimension(global_height, global_width) :: global_cells
     integer :: num_live_neighbors = 0
+    integer :: current_step = 0
 
     ! ---------------------------------------------------------------------
     ! Parellel GoF related parameters
@@ -66,14 +69,23 @@ program main
     integer :: i, j, k
 
     ! ---------------------------------------------------------------------
+    ! Parellel File I/O related params
+    ! ---------------------------------------------------------------------
+
+    integer, parameter :: file_bufsize = 100
+    integer :: file_buf(file_bufsize)
+    integer :: thefile
+    integer(kind=MPI_OFFSET_KIND) :: disp
+
+    character(100) :: filename, step_str
+
+    ! ---------------------------------------------------------------------
     ! Code: Start MPI
     ! ---------------------------------------------------------------------
 
     call MPI_INIT(ierr)
     call MPI_COMM_RANK(MPI_COMM_WORLD, my_rank, ierr)
     call MPI_COMM_SIZE(MPI_COMM_WORLD, num_procs, ierr)
-
-    itag = 1111
 
     ! MPI related: Compute the neighbor ranks
     left_procs = modulo(my_rank - 1, num_procs)
@@ -147,7 +159,7 @@ program main
     ! MPI Communication: send edges to other procs as ghost cells
     ! ---------------------------------------------------------------------
 
-    do k = 1, 4
+    do k = 1, max_step
 
         loc_left = recv_cells(:, 1)
         loc_right = recv_cells(:, width)
@@ -155,18 +167,6 @@ program main
         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
         ! Send and receive ghost cells
-        ! call MPI_ISEND(loc_left, height, MPI_INTEGER, left_procs, & 
-        !                itag, MPI_COMM_WORLD, irequest, ierr)
-
-        ! call MPI_ISEND(loc_right, height, MPI_INTEGER, right_procs, &
-        !                itag, MPI_COMM_WORLD, irequest, ierr)
-        
-        ! call MPI_RECV(rev_left, height, MPI_INTEGER, left_procs, &
-        !               itag, MPI_COMM_WORLD, istat, ierr)
-        
-        ! call MPI_RECV(rev_right, height, MPI_INTEGER, right_procs, & 
-        !               itag, MPI_COMM_WORLD, istat, ierr)
-
         call MPI_SENDRECV(loc_left, height, MPI_INTEGER, left_procs, itag, &
                           rev_right, height, MPI_INTEGER, right_procs, itag, & 
                           MPI_COMM_WORLD, istat, ierr)
@@ -250,7 +250,42 @@ program main
             end do
         end do
 
-        ! Do I/O print here
+    ! ---------------------------------------------------------------------
+    ! Code: Print the state of the board to the file.
+    ! We check if we have reached
+    ! ---------------------------------------------------------------------
+
+        if (any((/ 0, 20, 40, 60, 80 /) .eq. current_step)) then
+
+            ! prepare filename
+            write(step_str, '(i0.3)') current_step
+            filename = 'gof_' // trim(step_str) // '.dat'
+
+            ! Write file content to buffer
+            do i = 1, file_bufsize
+                file_buf(i) = my_rank + 48
+            end do
+
+            ! Assuming 4-byte integers!!!!!! 
+            disp = my_rank * file_bufsize * 4 
+
+            call MPI_FILE_OPEN(MPI_COMM_WORLD, filename, & 
+                               MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
+                               MPI_INFO_NULL, thefile, ierr) 
+
+            call MPI_FILE_SET_VIEW(thefile, disp, MPI_INTEGER, & 
+                                   MPI_INTEGER, 'native', & 
+                                   MPI_INFO_NULL, ierr) 
+
+            call MPI_FILE_WRITE(thefile, file_buf, file_bufsize, MPI_INTEGER, & 
+                                MPI_STATUS_IGNORE, ierr)
+
+            call MPI_FILE_CLOSE(thefile, ierr) 
+
+        endif
+
+
+        current_step = current_step + 1
 
     end do
 
