@@ -98,7 +98,7 @@ program main
     ! ---------------------------------------------------------------------
 
     ! Temporary check, subject to remove
-    if (modulo(global_width, num_procs) .ne. 0) then
+    if (modulo(global_width, num_procs) /= 0) then
         print *, ("width of the world can not divid by number of processors!")
         call exit(0)
     end if
@@ -245,7 +245,7 @@ program main
                 ! Count number of live neighbors at cell (i, j)
                 num_live_neighbors = sum(aug_cells(i - 1:i + 1, j - 1:j + 1))
 
-                if (aug_cells(i, j) .ne. 0) then
+                if (aug_cells(i, j) /= 0) then
                     num_live_neighbors = num_live_neighbors - 1
                 end if
 

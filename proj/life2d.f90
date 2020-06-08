@@ -119,12 +119,12 @@ program main
     call MPI_COMM_RANK(MPI_COMM_WORLD, my_rank, ierr)
     call MPI_COMM_SIZE(MPI_COMM_WORLD, num_procs, ierr)
 
-    if (modulo(global_width, num_procs) .ne. 0) then
+    if (modulo(global_width, num_procs) /= 0) then
         print *, ("width of the world can not divid by number of processors!")
         call exit(0)
     end if
 
-    if (modulo(global_height, num_procs) .ne. 0) then
+    if (modulo(global_height, num_procs) /= 0) then
         print *, ("width of the world can not divid by number of processors!")
         call exit(0)
     end if
@@ -134,7 +134,7 @@ program main
     height = global_height / num_procs
     width = global_width / num_procs
 
-    if (my_rank .eq. root_rank) then
+    if (my_rank == root_rank) then
         print *, "num_procs_per_row: ", num_procs_per_row
         print *, "height: ", height
         print *, "width: ", width
@@ -188,7 +188,7 @@ program main
         tile_n2ij(my_rank, num_procs_per_row) + [1, 1], &
         num_procs_per_row), num_procs_per_row)
 
-    ! if (my_rank .eq. root_rank) then
+    ! if (my_rank == root_rank) then
     !     print *, "upper_procs: ", upper_procs
     !     print *, "lower_procs: ", lower_procs
     !     print *, "left_procs : ", left_procs
@@ -235,31 +235,6 @@ program main
     global_cells(1, 3) = 1
     global_cells(2, 3) = 1
 
-    ! if (my_rank .eq. 0) then
-    !     print *, '----- Initial board ------'
-    !     do i = 1, global_height
-    !         do j = 1, global_width
-    !             write(*, '(I3)', advance='no') global_cells(i, j)
-    !         end do
-    !         print *, ''
-    !     end do
-    !     print *, ''
-    ! end if
-
-    ! ! ---------------------------------------------------------------------
-    ! ! Scatter and distribute the board to processes
-    ! ! ---------------------------------------------------------------------
-
-    ! num_cell_per_task = (global_height * global_width) / num_procs
-    ! ! or maybe just width * height
-
-    ! call MPI_SCATTER(global_cells, num_cell_per_task, MPI_INTEGER, &
-    !                  recv_buffer, num_cell_per_task, MPI_INTEGER, &
-    !                  root_rank, MPI_COMM_WORLD, ierr)
-
-    ! ! Convert recieved 1D raw buffer into 2D local cells
-    ! recv_cells = reshape(recv_buffer, (/height, width/))
-
     ! ---------------------------------------------------------------------
     ! MPI Communication: send edges to other procs as ghost cells
     ! ---------------------------------------------------------------------
@@ -271,7 +246,7 @@ program main
 
         ! **** This is a fake [recv_cells], because I gave up using Scatter
         recv_cells = 0
-        ! if (my_rank .eq. root_rank) then
+        ! if (my_rank == root_rank) then
         !     recv_cells = 1
         ! endif
 
@@ -405,7 +380,7 @@ program main
                 ! Count number of live neighbors at cell (i, j)
                 num_live_neighbors = sum(aug_cells(i - 1:i + 1, j - 1:j + 1))
 
-                if (aug_cells(i, j) .ne. 0) then
+                if (aug_cells(i, j) /= 0) then
                     num_live_neighbors = num_live_neighbors - 1
                 end if
 
@@ -426,30 +401,11 @@ program main
 
     end do
 
-    ! ! ---------------------------------------------------------------------
-    ! ! Code: Collect & Gather the information
-    ! ! ---------------------------------------------------------------------
-
-    ! recv_buffer = pack(recv_cells, .true.)
-
-    ! call MPI_GATHER(recv_buffer, num_cell_per_task, MPI_INTEGER, &
-    !                 global_cells, num_cell_per_task, MPI_INTEGER, &
-    !                 root_rank, MPI_COMM_WORLD, ierr)
-
     ! End Timer here.
     t1 = MPI_WTIME()
     t_delta = t1 - t0
 
-    if (my_rank .eq. root_rank) then
-        ! print *, '----- Final board ------'
-        ! do i = 1, global_height
-        !     do j = 1, global_width
-        !         write(*, '(I3)', advance='no') global_cells(i, j)
-        !     end do
-        !     print *, ''
-        ! end do
-        ! print *, ''
-
+    if (my_rank == root_rank) then
 
         print *, 'Time spent: ', t1 - t0
         
@@ -503,7 +459,7 @@ pure function tile_n2ij(n, width) result(ij)
     integer, intent(in) :: width
     integer :: ij(2), i, j
 
-    if (n .eq. 0) then
+    if (n == 0) then
         ij = 0
     else 
         i = n / width
