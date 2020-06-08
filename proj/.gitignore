@@ -1,0 +1,6 @@
+*.mod
+*.dat
+*.exe
+*.out
+gof.o*
+gof.e*
