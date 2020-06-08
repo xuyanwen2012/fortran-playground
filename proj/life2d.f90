@@ -49,8 +49,8 @@ program main
     ! ---------------------------------------------------------------------
     ! Game-of-Life(GoF) related parameters
     ! ---------------------------------------------------------------------
-    integer, parameter :: global_height = 20
-    integer, parameter :: global_width = 20
+    integer, parameter :: global_height = 3600
+    integer, parameter :: global_width = 3600
     integer, parameter :: max_step = 80
 
     integer :: global_cells(global_height, global_width)
@@ -188,16 +188,16 @@ program main
         tile_n2ij(my_rank, num_procs_per_row) + [1, 1], &
         num_procs_per_row), num_procs_per_row)
 
-    if (my_rank .eq. root_rank) then
-        print *, "upper_procs: ", upper_procs
-        print *, "lower_procs: ", lower_procs
-        print *, "left_procs : ", left_procs
-        print *, "right_procs: ", right_procs
-        print *, "upper_left_procs : ", upper_left_procs
-        print *, "upper_right_procs: ", upper_right_procs
-        print *, "lower_left_procs : ", lower_left_procs
-        print *, "lower_right_procs: ", lower_right_procs
-    endif
+    ! if (my_rank .eq. root_rank) then
+    !     print *, "upper_procs: ", upper_procs
+    !     print *, "lower_procs: ", lower_procs
+    !     print *, "left_procs : ", left_procs
+    !     print *, "right_procs: ", right_procs
+    !     print *, "upper_left_procs : ", upper_left_procs
+    !     print *, "upper_right_procs: ", upper_right_procs
+    !     print *, "lower_left_procs : ", lower_left_procs
+    !     print *, "lower_right_procs: ", lower_right_procs
+    ! endif
 
     ! ---------------------------------------------------------------------
     ! Allocate memory for all the dynamic arrays
@@ -235,16 +235,16 @@ program main
     global_cells(1, 3) = 1
     global_cells(2, 3) = 1
 
-    if (my_rank .eq. 0) then
-        print *, '----- Initial board ------'
-        do i = 1, global_height
-            do j = 1, global_width
-                write(*, '(I3)', advance='no') global_cells(i, j)
-            end do
-            print *, ''
-        end do
-        print *, ''
-    end if
+    ! if (my_rank .eq. 0) then
+    !     print *, '----- Initial board ------'
+    !     do i = 1, global_height
+    !         do j = 1, global_width
+    !             write(*, '(I3)', advance='no') global_cells(i, j)
+    !         end do
+    !         print *, ''
+    !     end do
+    !     print *, ''
+    ! end if
 
     ! ! ---------------------------------------------------------------------
     ! ! Scatter and distribute the board to processes

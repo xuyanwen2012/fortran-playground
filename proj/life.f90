@@ -112,7 +112,7 @@ program main
     ! file I/O related
     ! each row has 'width' + '\n', (total height rows)
     ! also print additional 10 character for text
-    file_bufsize = height * (width + 1) ! + 1
+    file_bufsize = height * (width + 1) + 1
     allocate(file_buf(file_bufsize))
 
     ! ----------------------------------------------------------------
@@ -125,7 +125,7 @@ program main
     ! 4  8 12 16
     ! ---------------------------------------------------------------
     
-    if (my_rank .eq. root_rank) then
+    if (my_rank == root_rank) then
 
         ! global_cells = reshape((/ (i, i = 1,  global_height * global_width) /), (/global_height, global_width/))
         ! global_cells(2, 1:3) = 1
@@ -136,16 +136,17 @@ program main
         global_cells(1, 3) = 1
         global_cells(2, 3) = 1
 
-        if (my_rank .eq. root_rank) then
-            print *, '----- Initial board ------'
-            do i = 1, global_height
-                do j = 1, global_width
-                    write(*, '(I3)', advance='no') global_cells(i, j)
-                end do
-                print *, ''
+        print *, '----- Initial board ------'
+        do i = 1, global_height
+            do j = 1, global_width
+                if (global_cells(i, j) == 0) then
+                    write(*, '(A)', advance='no') ' O'
+                else 
+                    write(*, '(A)', advance='no') ' X'
+                end if
             end do
             print *, ''
-        end if
+        end do
 
     end if
 
@@ -266,49 +267,51 @@ program main
     ! We check if we have reached to the 20s mile stone
     ! ---------------------------------------------------------------------
 
-        ! if (any((/ 0, 19, 39, 59, 79 /) .eq. current_step)) then
+        if (any((/ 0, 19, 39, 59, 79 /) == current_step)) then
 
-        !     ! prepare file buffer & filename
-        !     write(step_str, '(i0.3)') current_step
-        !     filename = 'gof_' // trim(step_str) // '.dat'
+            ! prepare file buffer & filename
+            write(step_str, '(i0.3)') current_step
+            filename = 'gof_' // trim(step_str) // '.dat'
 
-        !     file_buf = 0
-        !     l = 1
-        !     do i = 1, height
+            file_buf = 0
+            l = 1
+            do i = 1, height
 
-        !         ! Print entire row
-        !         do j = 1, width
-        !             if (recv_cells(i, j) .eq. 0) then
-        !                 file_buf(l) = 79 ! ASCII value of 'O'
-        !             else
-        !                 file_buf(l) = 88 ! ASCII value of 'X'
-        !             endif 
-        !             l = l + 1
-        !         end do
+                ! Print entire row
+                do j = 1, width
+                    if (recv_cells(i, j) == 0) then
+                        file_buf(l) = 79 ! ASCII value of 'O'
+                    else
+                        file_buf(l) = 88 ! ASCII value of 'X'
+                    endif 
+                    l = l + 1
+                end do
 
-        !         ! Print new line
-        !         file_buf(l) = 10 ! ASCII value of '\n'
-        !         l = l + 1
+                ! Print new line
+                file_buf(l) = 10 ! ASCII value of '\n'
+                l = l + 1
 
-        !     end do
+            end do
 
-        !     ! Assuming 4-byte integers!!!!!! 
-        !     disp = my_rank * file_bufsize * 4
+            file_buf(l) = 10 ! ASCII value of '\n'
 
-        !     call MPI_FILE_OPEN(MPI_COMM_WORLD, filename, & 
-        !                        MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
-        !                        MPI_INFO_NULL, thefile, ierr) 
+            ! Assuming 4-byte integers!!!!!! 
+            disp = my_rank * file_bufsize * 4
 
-        !     call MPI_FILE_SET_VIEW(thefile, disp, MPI_INTEGER, & 
-        !                            MPI_INTEGER, 'native', & 
-        !                            MPI_INFO_NULL, ierr) 
+            call MPI_FILE_OPEN(MPI_COMM_WORLD, filename, & 
+                               MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
+                               MPI_INFO_NULL, thefile, ierr) 
 
-        !     call MPI_FILE_WRITE(thefile, file_buf, file_bufsize, MPI_INTEGER, & 
-        !                         MPI_STATUS_IGNORE, ierr)
+            call MPI_FILE_SET_VIEW(thefile, disp, MPI_INTEGER, & 
+                                   MPI_INTEGER, 'native', & 
+                                   MPI_INFO_NULL, ierr) 
 
-        !     call MPI_FILE_CLOSE(thefile, ierr) 
+            call MPI_FILE_WRITE(thefile, file_buf, file_bufsize, MPI_INTEGER, & 
+                                MPI_STATUS_IGNORE, ierr)
 
-        ! endif
+            call MPI_FILE_CLOSE(thefile, ierr) 
+
+        endif
 
         current_step = current_step + 1
 
@@ -328,19 +331,19 @@ program main
     t1 = MPI_WTIME()
     t_delta = t1 - t0
 
-    if (my_rank .eq. root_rank) then
+    if (my_rank == root_rank) then
         print *, '----- Final board ------'
         do i = 1, global_height
             do j = 1, global_width
-                write(*, '(I3)', advance='no') global_cells(i, j)
+                if (global_cells(i, j) == 0) then
+                    write(*, '(A)', advance='no') ' O'
+                else 
+                    write(*, '(A)', advance='no') ' X'
+                end if
             end do
             print *, ''
         end do
-        print *, ''
-
-
         print *, 'Time spent: ', t1 - t0
-
     end if
 
     ! ---------------------------------------------------------------------
