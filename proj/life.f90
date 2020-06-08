@@ -27,7 +27,7 @@ program main
     integer, parameter :: global_width = 20
     integer, parameter :: max_step = 80
 
-    integer, dimension(global_height, global_width) :: global_cells
+    integer :: global_cells(global_height, global_width)
     integer :: num_live_neighbors = 0
     integer :: current_step = 0
 
@@ -50,9 +50,9 @@ program main
     ! [aug_cells] augmented cells, which should include Ghost cells. 2 more
     ! than the [recv_cells]. But when we do the simulation, we should only 
     ! work on the area from (2, 2) to (w+1, h+1)
-    integer, dimension(:), allocatable :: recv_buffer
-    integer, dimension(:, :), allocatable :: recv_cells
-    integer, dimension(:, :), allocatable :: aug_cells
+    integer, allocatable :: recv_buffer(:)
+    integer, allocatable :: recv_cells(:, :)
+    integer, allocatable :: aug_cells(:, :)
 
     ! [rev_left] and [rev_right] are strip (1*h), i.e. The local Ghost buffer
     ! which should be recieved from tge left, the right neighbor, respectively
@@ -66,14 +66,14 @@ program main
     integer :: left_procs, right_procs
 
     integer :: num_cell_per_task
-    integer :: i, j, k
+    integer :: i, j, k, l
 
     ! ---------------------------------------------------------------------
     ! Parellel File I/O related params
     ! ---------------------------------------------------------------------
 
-    integer, parameter :: file_bufsize = 100
-    integer :: file_buf(file_bufsize)
+    integer :: file_bufsize
+    integer, allocatable :: file_buf(:)
     integer :: thefile
     integer(kind=MPI_OFFSET_KIND) :: disp
 
@@ -106,6 +106,12 @@ program main
     allocate (recv_buffer(width * height))
     allocate (recv_cells(height, width))
     allocate (aug_cells(height + 2, width + 2))
+
+    ! file I/O related
+    ! each row has 'width' + '\n', (total height rows)
+    ! also print additional 10 character for text
+    file_bufsize = height * (width + 1) ! + 1
+    allocate(file_buf(file_bufsize))
 
     ! ----------------------------------------------------------------
     ! Initialize Global World (only initialized in root rank)
@@ -159,7 +165,7 @@ program main
     ! MPI Communication: send edges to other procs as ghost cells
     ! ---------------------------------------------------------------------
 
-    do k = 1, max_step
+    do k = 1, max_step + 1
 
         loc_left = recv_cells(:, 1)
         loc_right = recv_cells(:, width)
@@ -252,22 +258,36 @@ program main
 
     ! ---------------------------------------------------------------------
     ! Code: Print the state of the board to the file.
-    ! We check if we have reached
+    ! We check if we have reached to the 20s mile stone
     ! ---------------------------------------------------------------------
 
         if (any((/ 0, 20, 40, 60, 80 /) .eq. current_step)) then
 
-            ! prepare filename
+            ! prepare file buffer & filename
             write(step_str, '(i0.3)') current_step
             filename = 'gof_' // trim(step_str) // '.dat'
 
-            ! Write file content to buffer
-            do i = 1, file_bufsize
-                file_buf(i) = my_rank + 48
+            file_buf = 0
+            l = 1
+            do i = 1, height
+
+                ! Print entire row
+                do j = 1, width
+                    if (recv_cells(i, j) .eq. 0) then
+                        file_buf(l) = 79 ! ASCII value of 'O'
+                    else
+                        file_buf(l) = 88 ! ASCII value of 'X'
+                    endif 
+                    l = l + 1
+                end do
+
+                ! Print new line
+                file_buf(l) = 10 ! ASCII value of '\n'
+                l = l + 1
             end do
 
             ! Assuming 4-byte integers!!!!!! 
-            disp = my_rank * file_bufsize * 4 
+            disp = my_rank * file_bufsize * 4
 
             call MPI_FILE_OPEN(MPI_COMM_WORLD, filename, & 
                                MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
@@ -283,7 +303,6 @@ program main
             call MPI_FILE_CLOSE(thefile, ierr) 
 
         endif
-
 
         current_step = current_step + 1
 
@@ -317,6 +336,7 @@ program main
     deallocate (recv_buffer) 
     deallocate (recv_cells) 
     deallocate (aug_cells) 
+    deallocate (file_buf) 
 
     call MPI_FINALIZE(ierr)
 
