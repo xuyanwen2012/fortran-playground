@@ -31,6 +31,8 @@ program main
     integer :: num_live_neighbors = 0
     integer :: current_step = 0
 
+    double precision :: t0, t1, t_delta
+
     ! ---------------------------------------------------------------------
     ! Parellel GoF related parameters
     ! ---------------------------------------------------------------------
@@ -151,6 +153,9 @@ program main
     ! Scatter and distribute the board to processes
     ! ---------------------------------------------------------------------
 
+    ! Start timer for performance measurement here
+    t0 = MPI_WTIME()
+
     num_cell_per_task = (global_height * global_width) / num_procs
 
     ! Then distribute the cells to other thread
@@ -261,49 +266,49 @@ program main
     ! We check if we have reached to the 20s mile stone
     ! ---------------------------------------------------------------------
 
-        if (any((/ 0, 19, 39, 59, 79 /) .eq. current_step)) then
+        ! if (any((/ 0, 19, 39, 59, 79 /) .eq. current_step)) then
 
-            ! prepare file buffer & filename
-            write(step_str, '(i0.3)') current_step
-            filename = 'gof_' // trim(step_str) // '.dat'
+        !     ! prepare file buffer & filename
+        !     write(step_str, '(i0.3)') current_step
+        !     filename = 'gof_' // trim(step_str) // '.dat'
 
-            file_buf = 0
-            l = 1
-            do i = 1, height
+        !     file_buf = 0
+        !     l = 1
+        !     do i = 1, height
 
-                ! Print entire row
-                do j = 1, width
-                    if (recv_cells(i, j) .eq. 0) then
-                        file_buf(l) = 79 ! ASCII value of 'O'
-                    else
-                        file_buf(l) = 88 ! ASCII value of 'X'
-                    endif 
-                    l = l + 1
-                end do
+        !         ! Print entire row
+        !         do j = 1, width
+        !             if (recv_cells(i, j) .eq. 0) then
+        !                 file_buf(l) = 79 ! ASCII value of 'O'
+        !             else
+        !                 file_buf(l) = 88 ! ASCII value of 'X'
+        !             endif 
+        !             l = l + 1
+        !         end do
 
-                ! Print new line
-                file_buf(l) = 10 ! ASCII value of '\n'
-                l = l + 1
+        !         ! Print new line
+        !         file_buf(l) = 10 ! ASCII value of '\n'
+        !         l = l + 1
 
-            end do
+        !     end do
 
-            ! Assuming 4-byte integers!!!!!! 
-            disp = my_rank * file_bufsize * 4
+        !     ! Assuming 4-byte integers!!!!!! 
+        !     disp = my_rank * file_bufsize * 4
 
-            call MPI_FILE_OPEN(MPI_COMM_WORLD, filename, & 
-                               MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
-                               MPI_INFO_NULL, thefile, ierr) 
+        !     call MPI_FILE_OPEN(MPI_COMM_WORLD, filename, & 
+        !                        MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
+        !                        MPI_INFO_NULL, thefile, ierr) 
 
-            call MPI_FILE_SET_VIEW(thefile, disp, MPI_INTEGER, & 
-                                   MPI_INTEGER, 'native', & 
-                                   MPI_INFO_NULL, ierr) 
+        !     call MPI_FILE_SET_VIEW(thefile, disp, MPI_INTEGER, & 
+        !                            MPI_INTEGER, 'native', & 
+        !                            MPI_INFO_NULL, ierr) 
 
-            call MPI_FILE_WRITE(thefile, file_buf, file_bufsize, MPI_INTEGER, & 
-                                MPI_STATUS_IGNORE, ierr)
+        !     call MPI_FILE_WRITE(thefile, file_buf, file_bufsize, MPI_INTEGER, & 
+        !                         MPI_STATUS_IGNORE, ierr)
 
-            call MPI_FILE_CLOSE(thefile, ierr) 
+        !     call MPI_FILE_CLOSE(thefile, ierr) 
 
-        endif
+        ! endif
 
         current_step = current_step + 1
 
@@ -319,6 +324,10 @@ program main
                     global_cells, num_cell_per_task, MPI_INTEGER, &
                     root_rank, MPI_COMM_WORLD, ierr)
 
+    ! End Timer here.
+    t1 = MPI_WTIME()
+    t_delta = t1 - t0
+
     if (my_rank .eq. root_rank) then
         print *, '----- Final board ------'
         do i = 1, global_height
@@ -328,6 +337,10 @@ program main
             print *, ''
         end do
         print *, ''
+
+
+        print *, 'Time spent: ', t1 - t0
+
     end if
 
     ! ---------------------------------------------------------------------

@@ -49,10 +49,15 @@ program main
     ! ---------------------------------------------------------------------
     ! Game-of-Life(GoF) related parameters
     ! ---------------------------------------------------------------------
-    integer, parameter :: global_height = 9
-    integer, parameter :: global_width = 9
-    integer, dimension(global_height, global_width) :: global_cells
+    integer, parameter :: global_height = 20
+    integer, parameter :: global_width = 20
+    integer, parameter :: max_step = 80
+
+    integer :: global_cells(global_height, global_width)
     integer :: num_live_neighbors = 0
+    integer :: current_step = 0
+
+    double precision :: t0, t1, t_delta
 
     ! ---------------------------------------------------------------------
     ! Parellel GoF related parameters
@@ -113,8 +118,6 @@ program main
     call MPI_INIT(ierr)
     call MPI_COMM_RANK(MPI_COMM_WORLD, my_rank, ierr)
     call MPI_COMM_SIZE(MPI_COMM_WORLD, num_procs, ierr)
-
-    itag = 1111
 
     if (modulo(global_width, num_procs) .ne. 0) then
         print *, ("width of the world can not divid by number of processors!")
@@ -260,6 +263,9 @@ program main
     ! ---------------------------------------------------------------------
     ! MPI Communication: send edges to other procs as ghost cells
     ! ---------------------------------------------------------------------
+
+    ! Start timer for performance measurement here
+    t0 = MPI_WTIME()
 
     do k = 1, 4
 
@@ -430,16 +436,25 @@ program main
     !                 global_cells, num_cell_per_task, MPI_INTEGER, &
     !                 root_rank, MPI_COMM_WORLD, ierr)
 
-    ! if (my_rank .eq. 0) then
-    !     print *, '----- Final board ------'
-    !     do i = 1, global_height
-    !         do j = 1, global_width
-    !             write(*, '(I3)', advance='no') global_cells(i, j)
-    !         end do
-    !         print *, ''
-    !     end do
-    !     print *, ''
-    ! end if
+    ! End Timer here.
+    t1 = MPI_WTIME()
+    t_delta = t1 - t0
+
+    if (my_rank .eq. root_rank) then
+        ! print *, '----- Final board ------'
+        ! do i = 1, global_height
+        !     do j = 1, global_width
+        !         write(*, '(I3)', advance='no') global_cells(i, j)
+        !     end do
+        !     print *, ''
+        ! end do
+        ! print *, ''
+
+
+        print *, 'Time spent: ', t1 - t0
+        
+    end if
+
 
     ! ---------------------------------------------------------------------
     ! Code: Finish MPI
