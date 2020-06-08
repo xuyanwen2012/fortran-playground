@@ -1,10 +1,9 @@
-#!/bin/bash
-#SBATCH -N 2
-#SBATCH --ntasks 8
-#SBATCH --job-name GameOfLife
-#SBATCH --time 0:01:00
-#SBATCH -o gof.out
-#SBATCH -o gof.err
+#PBS -S /bin/tcsh
+#PBS -q newest
+#PBS -N gof
+#PBS -l nodes=1:ppn=4
+#PBS -l walltime=00:01:00
 
-mpirun -np 8 ./life
+cd $PBS_O_WORKDIR
+mpirun -np 4 ./life
 
