@@ -23,7 +23,7 @@ program main
     ! ---------------------------------------------------------------------
     ! Game-of-Life(GoF) related parameters
     ! ---------------------------------------------------------------------
-    integer, parameter :: global_height = 5
+    integer, parameter :: global_height = 20
     integer, parameter :: global_width = 20
     integer, parameter :: max_step = 80
 
@@ -165,7 +165,7 @@ program main
     ! MPI Communication: send edges to other procs as ghost cells
     ! ---------------------------------------------------------------------
 
-    do k = 1, max_step + 1
+    do k = 1, max_step
 
         loc_left = recv_cells(:, 1)
         loc_right = recv_cells(:, width)
@@ -261,7 +261,7 @@ program main
     ! We check if we have reached to the 20s mile stone
     ! ---------------------------------------------------------------------
 
-        if (any((/ 0, 20, 40, 60, 80 /) .eq. current_step)) then
+        if (any((/ 0, 19, 39, 59, 79 /) .eq. current_step)) then
 
             ! prepare file buffer & filename
             write(step_str, '(i0.3)') current_step
@@ -284,6 +284,7 @@ program main
                 ! Print new line
                 file_buf(l) = 10 ! ASCII value of '\n'
                 l = l + 1
+
             end do
 
             ! Assuming 4-byte integers!!!!!! 
